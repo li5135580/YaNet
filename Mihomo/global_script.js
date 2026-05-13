@@ -20,13 +20,13 @@ const _skipIps =
 
 /**
  * 多订阅聚合配置
- * 按 P1_url、P2_url ... 格式定义，只需修改 URL 占位符即可
+ * 将占位符"聚合订阅1""聚合订阅2"替换为真实订阅链接即可生效
+ * 不替换保持占位符则不生成 proxy-providers
  * 新增订阅按序号递增：P3_url、P4_url ...
- * 留空对象则不生成 proxy-providers
  */
 const _subscriptions = {
-  // P1_url: 'https://www.example1.com/sub',
-  // P2_url: 'https://www.example2.com/sub',
+  P1_url: '聚合订阅1',
+  P2_url: '聚合订阅2',
 }
 
 // DNS 配置
@@ -750,18 +750,23 @@ function main(config) {
   }
 
   // 3.2 多订阅聚合：解析 P1_url / P2_url 变量，生成 proxy-providers
+  // 占位符"聚合订阅1""聚合订阅2"不会被处理，替换为真实 URL 才生效
   if (typeof subscriptions === 'object' && subscriptions !== null) {
     const keys = Object.keys(subscriptions)
       .filter((k) => /^P\d+_url$/i.test(k))
       .sort()
 
-    if (keys.length > 0) {
+    const validEntries = keys
+      .filter((k) => {
+        const url = subscriptions[k]
+        return url && typeof url === 'string' && /^https?:\/\//.test(url)
+      })
+
+    if (validEntries.length > 0) {
       config['proxy-providers'] = config['proxy-providers'] || {}
 
-      keys.forEach((key) => {
+      validEntries.forEach((key) => {
         const url = subscriptions[key]
-        if (!url || typeof url !== 'string') return
-
         const num = key.match(/^P(\d+)_url$/i)[1]
         const name = `订阅${num}`
 
