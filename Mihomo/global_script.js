@@ -223,66 +223,79 @@ const allRegionDefinitions = [
   {
     name: 'HK香港',
     regex: /港|🇭🇰|hk|hongkong|hong kong/i,
+    filter: '(?i)港|🇭🇰|hk|hongkong|hong kong',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Hong_Kong.png',
   },
   {
     name: 'US美国',
     regex: /(?!.*aus)(?=.*(美|🇺🇸|us(?!t)|usa|american|united states)).*/i,
+    filter: '(?i)(?!.*aus)(?=.*(美|🇺🇸|us(?!t)|usa|american|united states)).*',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_States.png',
   },
   {
     name: 'JP日本',
     regex: /日本|🇯🇵|jp|japan/i,
+    filter: '(?i)日本|🇯🇵|jp|japan',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Japan.png',
   },
   {
     name: 'KR韩国',
     regex: /韩|🇰🇷|kr|korea/i,
+    filter: '(?i)韩|🇰🇷|kr|korea',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Korea.png',
   },
   {
     name: 'SG新加坡',
     regex: /新加坡|🇸🇬|sg|singapore/i,
+    filter: '(?i)新加坡|🇸🇬|sg|singapore',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Singapore.png',
   },
   {
     name: 'CN中国大陆',
     regex: /中国|🇨🇳|cn|china/i,
+    filter: '(?i)中国|🇨🇳|cn|china',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/China_Map.png',
   },
   {
     name: 'TW台湾省',
     regex: /台湾|台灣|🇹🇼|tw|taiwan|tai wan/i,
+    filter: '(?i)台湾|台灣|🇹🇼|tw|taiwan|tai wan',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/China.png',
   },
   {
     name: 'GB英国',
     regex: /英|🇬🇧|uk|united kingdom|great britain/i,
+    filter: '(?i)英|🇬🇧|uk|united kingdom|great britain',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_Kingdom.png',
   },
   {
     name: 'DE德国',
     regex: /德国|🇩🇪|de|germany/i,
+    filter: '(?i)德国|🇩🇪|de|germany',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Germany.png',
   },
   {
     name: 'MY马来西亚',
     regex: /马来|🇲🇾|my|malaysia/i,
+    filter: '(?i)马来|🇲🇾|my|malaysia',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Malaysia.png',
   },
   {
     name: 'TK土耳其',
     regex: /土耳其|🇹🇷|tk|turkey/i,
+    filter: '(?i)土耳其|🇹🇷|tk|turkey',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Turkey.png',
   },
   {
     name: 'CA加拿大',
     regex: /加拿大|🇨🇦|ca|canada/i,
+    filter: '(?i)加拿大|🇨🇦|ca|canada',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Canada.png',
   },
   {
     name: 'AU澳大利亚',
     regex: /澳大利亚|🇦🇺|au|australia|sydney/i,
+    filter: '(?i)澳大利亚|🇦🇺|au|australia|sydney',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Australia.png',
   },
 ]
@@ -763,7 +776,8 @@ function main(config) {
     asn: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb`,
   }
 
-  // 3.2 多订阅聚合：遍历 proxyProviders，仅 url 以 http 开头的条目生效
+  // 3.2 多订阅聚合：解析 proxyProviders，仅 url 以 http 开头的条目生效
+  const providerKeys = []
   if (typeof subscriptions === 'object' && subscriptions !== null) {
     const entries = Object.entries(subscriptions)
       .filter(([, cfg]) => {
@@ -775,6 +789,8 @@ function main(config) {
       config['proxy-providers'] = config['proxy-providers'] || {}
 
       entries.forEach(([key, cfg]) => {
+        providerKeys.push(key)
+
         const provider = {
           type: cfg.type || 'http',
           url: cfg.url,
@@ -809,7 +825,7 @@ function main(config) {
     udp: true,
   })
 
-  // 3.2 高效代理分类 (单次遍历)
+  // 3.3 本地代理按地区分类 (单次遍历)
   const regionGroups = {}
   regionDefinitions.forEach(
     (r) =>
@@ -823,9 +839,7 @@ function main(config) {
   for (let i = 0; i < proxyCount; i++) {
     const proxy = proxies[i]
     const name = proxy.name
-    let matched = false
 
-    // 检查倍率
     if (excludeHighPercentage) {
       const match = multiplierRegex.exec(name)
       if (match && parseFloat(match[1]) > globalRatioLimit) {
@@ -833,7 +847,7 @@ function main(config) {
       }
     }
 
-    // 尝试匹配地区
+    let matched = false
     for (const region of regionDefinitions) {
       if (region.regex.test(name)) {
         regionGroups[region.name].proxies.push(name)
@@ -847,53 +861,84 @@ function main(config) {
     }
   }
 
+  // 3.4 构建地区策略组 — 本地节点 + provider 节点 (use + filter)
   const generatedRegionGroups = []
+  const hasProviders = providerKeys.length > 0
+
+  // 构建"其他节点"排除过滤器
+  const allRegionKeywords = regionDefinitions
+    .map((r) => r.filter.replace('(?i)', ''))
+    .join('|')
+
   regionDefinitions.forEach((r) => {
     const groupData = regionGroups[r.name]
-    if (groupData.proxies.length > 0) {
-      generatedRegionGroups.push({
+    const hasLocalNodes = groupData.proxies.length > 0
+
+    if (hasLocalNodes || hasProviders) {
+      const group = {
         ...groupBaseOption,
         name: r.name,
         type: 'url-test',
         tolerance: 50,
         icon: r.icon,
-        proxies: groupData.proxies,
-      })
+        proxies: hasLocalNodes ? groupData.proxies : [],
+      }
+
+      if (hasProviders) {
+        group.use = providerKeys
+        group.filter = r.filter
+      }
+
+      generatedRegionGroups.push(group)
     }
   })
 
-  const regionGroupNames = generatedRegionGroups.map((g) => g.name)
-
-  if (otherProxies.length > 0) {
-    generatedRegionGroups.push({
+  // "其他节点"组
+  if (otherProxies.length > 0 || hasProviders) {
+    const otherGroup = {
       ...groupBaseOption,
       name: '其他节点',
       type: 'select',
-      proxies: otherProxies,
+      proxies: otherProxies.length > 0 ? otherProxies : [],
       icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/World_Map.png',
-    })
+    }
+
+    if (hasProviders && otherProxies.length === 0) {
+      otherGroup.use = providerKeys
+      otherGroup.filter = `(?i)^(?!.*(?:${allRegionKeywords})).*`
+    } else if (hasProviders) {
+      otherGroup.use = providerKeys
+    }
+
+    generatedRegionGroups.push(otherGroup)
   }
 
-  // 全部节点：收集所有通过倍率过滤的节点名
-  const allProxyNames = []
+  const regionGroupNames = generatedRegionGroups.map((g) => g.name)
+
+  // 收集所有本地节点名（用于功能分组直列）
+  const allLocalProxyNames = []
   regionDefinitions.forEach((r) => {
     const groupData = regionGroups[r.name]
     if (groupData && groupData.proxies.length > 0) {
-      allProxyNames.push(...groupData.proxies)
+      allLocalProxyNames.push(...groupData.proxies)
     }
   })
-  allProxyNames.push(...otherProxies)
+  allLocalProxyNames.push(...otherProxies)
 
-  // 3.3 构建功能策略组 — 所有分组直接列出全部单个节点
+  // 3.5 构建功能策略组 — use 引入 provider 全量节点 + proxies 列出本地节点
   const functionalGroups = []
 
-  functionalGroups.push({
+  const defaultNodeGroup = {
     ...groupBaseOption,
     name: '默认节点',
     type: 'select',
-    proxies: ['直连', ...allProxyNames],
+    proxies: ['直连', ...allLocalProxyNames],
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png',
-  })
+  }
+  if (hasProviders) {
+    defaultNodeGroup.use = providerKeys
+  }
+  functionalGroups.push(defaultNodeGroup)
 
   serviceConfigs.forEach((svc) => {
     if (ruleOptions[svc.key]) {
@@ -913,25 +958,31 @@ function main(config) {
 
       let groupProxies
       if (svc.reject) {
-        groupProxies = ['REJECT', '直连', '默认节点', ...allProxyNames]
+        groupProxies = ['REJECT', '直连', '默认节点', ...allLocalProxyNames]
       } else if (svc.key === 'biliintl' || svc.key === 'bahamut') {
-        groupProxies = ['默认节点', '直连', ...allProxyNames]
+        groupProxies = ['默认节点', '直连', ...allLocalProxyNames]
       } else {
-        groupProxies = ['默认节点', ...allProxyNames, '直连']
+        groupProxies = ['默认节点', ...allLocalProxyNames, '直连']
       }
 
-      functionalGroups.push({
+      const group = {
         ...groupBaseOption,
         name: svc.name,
         type: 'select',
         proxies: groupProxies,
         url: svc.url,
         icon: svc.icon,
-      })
+      }
+
+      if (hasProviders) {
+        group.use = providerKeys
+      }
+
+      functionalGroups.push(group)
     }
   })
 
-  // 3.4 添加通用兜底策略组
+  // 3.6 通用兜底策略组
   rules.push(
     'GEOSITE,private,直连',
     'GEOSITE,category-public-tracker,直连',
@@ -942,32 +993,37 @@ function main(config) {
     'MATCH,其他外网'
   )
 
+  const buildFixedGroup = (opts) => {
+    const group = { ...groupBaseOption, ...opts }
+    if (hasProviders) {
+      group.use = providerKeys
+    }
+    return group
+  }
+
   functionalGroups.push(
-    {
-      ...groupBaseOption,
+    buildFixedGroup({
       name: '下载软件',
       type: 'select',
-      proxies: ['直连', 'REJECT', '默认节点', '国内网站', ...allProxyNames],
+      proxies: ['直连', 'REJECT', '默认节点', '国内网站', ...allLocalProxyNames],
       icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Download.png',
-    },
-    {
-      ...groupBaseOption,
+    }),
+    buildFixedGroup({
       name: '其他外网',
       type: 'select',
-      proxies: ['默认节点', '国内网站', ...allProxyNames],
+      proxies: ['默认节点', '国内网站', ...allLocalProxyNames],
       icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Streaming!CN.png',
-    },
-    {
-      ...groupBaseOption,
+    }),
+    buildFixedGroup({
       name: '国内网站',
       type: 'select',
-      proxies: ['直连', '默认节点', ...allProxyNames],
+      proxies: ['直连', '默认节点', ...allLocalProxyNames],
       url: 'https://wifi.vivo.com.cn/generate_204',
       icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/StreamingCN.png',
-    }
+    })
   )
 
-  // 3.5 组装最终结果
+  // 3.7 组装最终结果
   config['proxy-groups'] = [...functionalGroups, ...generatedRegionGroups]
 
   config['rules'] = rules
