@@ -919,7 +919,10 @@ function main(config) {
         type: 'url-test',
         tolerance: 50,
         icon: r.icon,
-        proxies: hasLocalNodes ? groupData.proxies : [],
+      }
+
+      if (hasLocalNodes) {
+        group.proxies = groupData.proxies
       }
 
       if (hasProviders) {
@@ -937,8 +940,11 @@ function main(config) {
       ...groupBaseOption,
       name: '其他节点',
       type: 'select',
-      proxies: otherProxies.length > 0 ? otherProxies : [],
       icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/World_Map.png',
+    }
+
+    if (otherProxies.length > 0) {
+      otherGroup.proxies = otherProxies
     }
 
     if (hasProviders && otherProxies.length === 0) {
