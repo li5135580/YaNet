@@ -383,6 +383,39 @@ const ruleProviders = {
 const multiplierRegex =
   /(?<=[xX✕✖⨉倍率])([1-9]+(\.\d+)*|0{1}\.\d+)(?=[xX✕✖⨉倍率])*/i
 
+// 机场广告/信息节点过滤
+const adInfoKeywords = [
+  '导航网址',
+  '距离下次重置',
+  '剩余流量',
+  '套餐到期',
+  '网址导航',
+  '官网',
+  '订阅',
+  '到期',
+  '剩余',
+  '重置',
+  '流量',
+  '已用',
+  '总计',
+  '续费',
+]
+
+const adInfoRegexes = [
+  /\b(?:USE|USED|TOTAL|EXPIRE|EMAIL)\b/i,
+  /Panel|Channel|Author|Traffic|Reset|Expire|Renew|Support|Telegram/i,
+  /https?:\/\//,
+  /(?:\d+\.\d+)\s*(GB|TB|MB|KB)/i,
+  /\d{4}[-/]\d{2}[-/]\d{2}/,
+]
+
+function isAdInfoNode(name) {
+  if (!name || typeof name !== 'string') return false
+  if (adInfoKeywords.some((kw) => name.includes(kw))) return true
+  if (adInfoRegexes.some((re) => re.test(name))) return true
+  return false
+}
+
 // --- 2. 服务规则数据结构 ---
 // Icons 更新为 GitHub Raw
 const serviceConfigs = [
@@ -839,6 +872,11 @@ function main(config) {
   for (let i = 0; i < proxyCount; i++) {
     const proxy = proxies[i]
     const name = proxy.name
+
+    // 去除机场广告/信息节点
+    if (isAdInfoNode(name)) {
+      continue
+    }
 
     if (excludeHighPercentage) {
       const match = multiplierRegex.exec(name)
