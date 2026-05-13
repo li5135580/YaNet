@@ -300,11 +300,6 @@ const dnsConfig = {
     'geosite:jetbrains-ai',
     'geosite:category-ai-!cn',
     'geosite:category-ai-chat-!cn',
-    'geosite:openai',
-    'geosite:gemini',
-    'geosite:anthropic',
-    'geosite:copilot',
-    'geosite:meta',
     'geosite:category-games-!cn',
     'geosite:google@!cn',
     'geosite:telegram',
@@ -326,7 +321,7 @@ const dnsConfig = {
     'geosite:private': 'system',
     'geosite:tld-cn,cn,steam@cn,category-games@cn,microsoft@cn,apple@cn,category-game-platforms-download@cn,category-public-tracker':
       chinaDNS,
-    'geosite:gfw,jetbrains-ai,category-ai-!cn,category-ai-chat-!cn,openai,gemini,anthropic,copilot,meta': foreignDNS,
+    'geosite:gfw,jetbrains-ai,category-ai-!cn,category-ai-chat-!cn': foreignDNS,
   },
 }
 
