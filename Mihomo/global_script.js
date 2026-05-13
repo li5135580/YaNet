@@ -20,13 +20,14 @@ const _skipIps =
 
 /**
  * 多订阅聚合配置
- * 每行一个订阅链接，支持以下格式：
- *   单链接：https://example.com/sub
- *   带别名：别名|https://example.com/sub
- *   带别名和更新间隔：别名|https://example.com/sub|3600
- * 留空则不生成 proxy-providers
+ * 按 P1_url、P2_url ... 格式定义，只需修改 URL 占位符即可
+ * 新增订阅按序号递增：P3_url、P4_url ...
+ * 留空对象则不生成 proxy-providers
  */
-const _subscriptions = ``
+const _subscriptions = {
+  // P1_url: 'https://www.example1.com/sub',
+  // P2_url: 'https://www.example2.com/sub',
+}
 
 // DNS 配置
 const _chinaDohDns = 'https://doh.pub/dns-query;https://dns.alidns.com/dns-query'
@@ -748,44 +749,34 @@ function main(config) {
     asn: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb`,
   }
 
-  // 3.2 多订阅聚合：解析订阅链接，生成 proxy-providers
-  const subscriptionLines = subscriptions
-    .split('\n')
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0)
+  // 3.2 多订阅聚合：解析 P1_url / P2_url 变量，生成 proxy-providers
+  if (typeof subscriptions === 'object' && subscriptions !== null) {
+    const keys = Object.keys(subscriptions)
+      .filter((k) => /^P\d+_url$/i.test(k))
+      .sort()
 
-  if (subscriptionLines.length > 0) {
-    config['proxy-providers'] = config['proxy-providers'] || {}
+    if (keys.length > 0) {
+      config['proxy-providers'] = config['proxy-providers'] || {}
 
-    subscriptionLines.forEach((line, index) => {
-      const parts = line.split('|').map((s) => s.trim())
-      let name, url, interval
+      keys.forEach((key) => {
+        const url = subscriptions[key]
+        if (!url || typeof url !== 'string') return
 
-      if (parts.length === 1) {
-        url = parts[0]
-        name = `订阅${index + 1}`
-        interval = 3600
-      } else if (parts.length === 2) {
-        name = parts[0]
-        url = parts[1]
-        interval = 3600
-      } else {
-        name = parts[0]
-        url = parts[1]
-        interval = parseInt(parts[2], 10) || 3600
-      }
+        const num = key.match(/^P(\d+)_url$/i)[1]
+        const name = `订阅${num}`
 
-      config['proxy-providers'][name] = {
-        type: 'http',
-        url: url,
-        interval: interval,
-        'health-check': {
-          enable: true,
-          url: 'https://www.gstatic.com/generate_204',
-          interval: 300,
-        },
-      }
-    })
+        config['proxy-providers'][name] = {
+          type: 'http',
+          url: url,
+          interval: 3600,
+          'health-check': {
+            enable: true,
+            url: 'https://www.gstatic.com/generate_204',
+            interval: 300,
+          },
+        }
+      })
+    }
   }
 
   config.proxies.push({
@@ -875,27 +866,14 @@ function main(config) {
   })
   allProxyNames.push(...otherProxies)
 
-  let allNodesGroup = null
-  if (allProxyNames.length > 0) {
-    allNodesGroup = {
-      name: '全部节点',
-      type: 'select',
-      icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Global.png',
-      proxies: allProxyNames,
-    }
-    // 不加入 groupBaseOption（不需要 url-test 相关属性）
-  }
-
-  // 3.3 构建功能策略组
+  // 3.3 构建功能策略组 — 所有分组直接列出全部单个节点
   const functionalGroups = []
 
   functionalGroups.push({
     ...groupBaseOption,
     name: '默认节点',
     type: 'select',
-    proxies: [...regionGroupNames, '其他节点', '全部节点', '直连'].filter(
-      (n) => n !== '其他节点' || otherProxies.length > 0
-    ),
+    proxies: ['直连', ...allProxyNames],
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png',
   })
 
@@ -917,11 +895,11 @@ function main(config) {
 
       let groupProxies
       if (svc.reject) {
-        groupProxies = ['REJECT', '直连', '默认节点', '全部节点']
+        groupProxies = ['REJECT', '直连', '默认节点', ...allProxyNames]
       } else if (svc.key === 'biliintl' || svc.key === 'bahamut') {
-        groupProxies = ['默认节点', '直连', '全部节点', ...regionGroupNames]
+        groupProxies = ['默认节点', '直连', ...allProxyNames]
       } else {
-        groupProxies = ['默认节点', '全部节点', ...regionGroupNames, '直连']
+        groupProxies = ['默认节点', ...allProxyNames, '直连']
       }
 
       functionalGroups.push({
@@ -951,32 +929,28 @@ function main(config) {
       ...groupBaseOption,
       name: '下载软件',
       type: 'select',
-      proxies: ['直连', 'REJECT', '默认节点', '国内网站', '全部节点', ...regionGroupNames],
+      proxies: ['直连', 'REJECT', '默认节点', '国内网站', ...allProxyNames],
       icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Download.png',
     },
     {
       ...groupBaseOption,
       name: '其他外网',
       type: 'select',
-      proxies: ['默认节点', '国内网站', '全部节点', ...regionGroupNames],
+      proxies: ['默认节点', '国内网站', ...allProxyNames],
       icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Streaming!CN.png',
     },
     {
       ...groupBaseOption,
       name: '国内网站',
       type: 'select',
-      proxies: ['直连', '默认节点', '全部节点', ...regionGroupNames],
+      proxies: ['直连', '默认节点', ...allProxyNames],
       url: 'https://wifi.vivo.com.cn/generate_204',
       icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/StreamingCN.png',
     }
   )
 
   // 3.5 组装最终结果
-  const allGroups = [...functionalGroups, ...generatedRegionGroups]
-  if (allNodesGroup) {
-    allGroups.push(allNodesGroup)
-  }
-  config['proxy-groups'] = allGroups
+  config['proxy-groups'] = [...functionalGroups, ...generatedRegionGroups]
 
   config['rules'] = rules
   config['rule-providers'] = ruleProviders
