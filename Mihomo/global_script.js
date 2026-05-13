@@ -912,17 +912,15 @@ function main(config) {
     const groupData = regionGroups[r.name]
     const hasLocalNodes = groupData.proxies.length > 0
 
-    if (hasLocalNodes || hasProviders) {
+    // 仅本地有节点且无 provider 时加入本地节点，有 provider 时也生成（带 use+filter）
+    if (hasLocalNodes) {
       const group = {
         ...groupBaseOption,
         name: r.name,
         type: 'url-test',
         tolerance: 50,
         icon: r.icon,
-      }
-
-      if (hasLocalNodes) {
-        group.proxies = groupData.proxies
+        proxies: groupData.proxies,
       }
 
       if (hasProviders) {
@@ -934,7 +932,7 @@ function main(config) {
     }
   })
 
-  // "其他节点"组
+  // "其他节点"组 — 始终生成（本地无归类节点 + provider 无归类节点）
   if (otherProxies.length > 0 || hasProviders) {
     const otherGroup = {
       ...groupBaseOption,
@@ -947,11 +945,11 @@ function main(config) {
       otherGroup.proxies = otherProxies
     }
 
-    if (hasProviders && otherProxies.length === 0) {
+    if (hasProviders) {
       otherGroup.use = providerKeys
-      otherGroup.filter = `(?i)^(?!.*(?:${allRegionKeywords})).*`
-    } else if (hasProviders) {
-      otherGroup.use = providerKeys
+      if (otherProxies.length === 0) {
+        otherGroup.filter = `(?i)^(?!.*(?:${allRegionKeywords})).*`
+      }
     }
 
     generatedRegionGroups.push(otherGroup)
