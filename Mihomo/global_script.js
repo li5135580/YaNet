@@ -520,7 +520,7 @@ const serviceConfigs = [
   {
     key: 'netflix',
     name: 'NETFLIX',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Netflix.png',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Netflix_Letter.png',
     url: 'https://api.fast.com/netflix/speedtest/v2?https=true',
     rules: ['GEOSITE,netflix,NETFLIX'],
   },
@@ -932,7 +932,7 @@ function main(config) {
     ...groupBaseOption,
     name: '默认节点',
     type: 'select',
-    proxies: ['直连', ...allLocalProxyNames],
+    proxies: ['直连', ...regionGroupNames, ...allLocalProxyNames],
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png',
   }
   if (hasProviders) {
