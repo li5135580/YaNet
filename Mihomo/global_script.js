@@ -20,13 +20,27 @@ const _skipIps =
 
 /**
  * 多订阅聚合配置
- * 将占位符"聚合订阅1""聚合订阅2"替换为真实订阅链接即可生效
- * 不替换保持占位符则不生成 proxy-providers
- * 新增订阅按序号递增：P3_url、P4_url ...
+ * 将 url 占位符替换为真实订阅链接即可生效，未替换的条目自动跳过
+ * additional-prefix 为节点名前缀，用于标识来源
+ * 新增订阅按 p3、p4 ... 递增
  */
-const _subscriptions = {
-  P1_url: '聚合订阅1',
-  P2_url: '聚合订阅2',
+const _proxyProviders = {
+  p1: {
+    type: 'http',
+    url: '聚合订阅链接1',
+    interval: 86400,
+    override: {
+      'additional-prefix': 'p1 | ',
+    },
+  },
+  p2: {
+    type: 'http',
+    url: '聚合订阅链接2',
+    interval: 86400,
+    override: {
+      'additional-prefix': 'p2 | ',
+    },
+  },
 }
 
 // DNS 配置
@@ -59,7 +73,7 @@ const args =
         ipv6: false,
         logLevel: 'error',
         githubProxy: 'https://ghfast.top/',
-        subscriptions: _subscriptions,
+        subscriptions: _proxyProviders,
       }
 
 /**
@@ -80,7 +94,7 @@ let {
   ipv6 = args.ipv6 || false,
   logLevel = args.logLevel || 'error',
   githubProxy = args.githubProxy || 'https://ghfast.top/',
-  subscriptions = args.subscriptions || _subscriptions,
+  subscriptions = args.subscriptions || _proxyProviders,
 } = args
 
 /**
@@ -749,37 +763,36 @@ function main(config) {
     asn: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb`,
   }
 
-  // 3.2 多订阅聚合：解析 P1_url / P2_url 变量，生成 proxy-providers
-  // 占位符"聚合订阅1""聚合订阅2"不会被处理，替换为真实 URL 才生效
+  // 3.2 多订阅聚合：遍历 proxyProviders，仅 url 以 http 开头的条目生效
   if (typeof subscriptions === 'object' && subscriptions !== null) {
-    const keys = Object.keys(subscriptions)
-      .filter((k) => /^P\d+_url$/i.test(k))
-      .sort()
-
-    const validEntries = keys
-      .filter((k) => {
-        const url = subscriptions[k]
+    const entries = Object.entries(subscriptions)
+      .filter(([, cfg]) => {
+        const url = cfg && cfg.url
         return url && typeof url === 'string' && /^https?:\/\//.test(url)
       })
 
-    if (validEntries.length > 0) {
+    if (entries.length > 0) {
       config['proxy-providers'] = config['proxy-providers'] || {}
 
-      validEntries.forEach((key) => {
-        const url = subscriptions[key]
-        const num = key.match(/^P(\d+)_url$/i)[1]
-        const name = `订阅${num}`
-
-        config['proxy-providers'][name] = {
-          type: 'http',
-          url: url,
-          interval: 3600,
+      entries.forEach(([key, cfg]) => {
+        const provider = {
+          type: cfg.type || 'http',
+          url: cfg.url,
+          interval: cfg.interval || 86400,
           'health-check': {
             enable: true,
             url: 'https://www.gstatic.com/generate_204',
             interval: 300,
           },
         }
+
+        if (cfg.override && cfg.override['additional-prefix']) {
+          provider.override = {
+            'additional-prefix': cfg.override['additional-prefix'],
+          }
+        }
+
+        config['proxy-providers'][key] = provider
       })
     }
   }
