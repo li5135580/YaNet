@@ -1,12 +1,8 @@
 # Yet another Internet
 
-这里没有你想要的东西，只有我自己喜欢的东西。
+覆写脚本：https://raw.githubusercontent.com/li5135580/YaNet/refs/heads/main/Mihomo/global_script.js
 
 Mihomo 全局覆写脚本支持[在SubStore中使用](https://yanet.vip/blog/2ivre320/)了！
 
-## 机场推荐
 
-| 名称                                  | 描述                                                                  |
-|-------------------------------------|---------------------------------------------------------------------|
-| [西部数据](https://s.yanet.vip/L3Yaij)  | 流媒体和 GPT 解锁，国内 BGP 多入口中转，IPLC 国际线路，20元/月 200G 起，有限速，不限客户端数量         |
-| [M78星云](https://s.yanet.vip/qqDI8m) | 流媒体和 GPT 解锁，有 IEPL 专线，最大提供 2GBPs 速率，12.8元/月 150G起，不限客户端数量，有 EMBY 服务 |
+
