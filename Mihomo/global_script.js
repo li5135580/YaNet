@@ -18,6 +18,16 @@ function stringToArray(val) {
 const _skipIps =
   '10.0.0.0/8;100.64.0.0/10;127.0.0.0/8;169.254.0.0/16;172.16.0.0/12;192.168.0.0/16;198.18.0.0/16;FC00::/7;FE80::/10;::1/128'
 
+/**
+ * 多订阅聚合配置
+ * 每行一个订阅链接，支持以下格式：
+ *   单链接：https://example.com/sub
+ *   带别名：别名|https://example.com/sub
+ *   带别名和更新间隔：别名|https://example.com/sub|3600
+ * 留空则不生成 proxy-providers
+ */
+const _subscriptions = ``
+
 // DNS 配置
 const _chinaDohDns = 'https://doh.pub/dns-query;https://dns.alidns.com/dns-query'
 const _foreignDohDns =
@@ -48,6 +58,7 @@ const args =
         ipv6: false,
         logLevel: 'error',
         githubProxy: 'https://ghfast.top/',
+        subscriptions: _subscriptions,
       }
 
 /**
@@ -68,6 +79,7 @@ let {
   ipv6 = args.ipv6 || false,
   logLevel = args.logLevel || 'error',
   githubProxy = args.githubProxy || 'https://ghfast.top/',
+  subscriptions = args.subscriptions || _subscriptions,
 } = args
 
 /**
@@ -288,6 +300,11 @@ const dnsConfig = {
     'geosite:jetbrains-ai',
     'geosite:category-ai-!cn',
     'geosite:category-ai-chat-!cn',
+    'geosite:openai',
+    'geosite:gemini',
+    'geosite:anthropic',
+    'geosite:copilot',
+    'geosite:meta',
     'geosite:category-games-!cn',
     'geosite:google@!cn',
     'geosite:telegram',
@@ -295,7 +312,6 @@ const dnsConfig = {
     'geosite:google',
     'geosite:amazon',
     'geosite:category-bank-jp',
-    // 'geosite:category-bank-cn@!cn',
   ],
   nameserver: chinaDNS,
   'default-nameserver': defaultDNS,
@@ -310,8 +326,7 @@ const dnsConfig = {
     'geosite:private': 'system',
     'geosite:tld-cn,cn,steam@cn,category-games@cn,microsoft@cn,apple@cn,category-game-platforms-download@cn,category-public-tracker':
       chinaDNS,
-    'geosite:gfw,jetbrains-ai,category-ai-!cn,category-ai-chat-!cn': foreignDNS,
-    // 'geosite:telegram': foreignDNS,
+    'geosite:gfw,jetbrains-ai,category-ai-!cn,category-ai-chat-!cn,openai,gemini,anthropic,copilot,meta': foreignDNS,
   },
 }
 
@@ -357,8 +372,63 @@ const serviceConfigs = [
       'GEOSITE,jetbrains-ai,国外AI',
       'GEOSITE,category-ai-!cn,国外AI',
       'GEOSITE,category-ai-chat-!cn,国外AI',
+      // OpenAI / ChatGPT
+      'DOMAIN-SUFFIX,chatgpt.com,国外AI',
+      'DOMAIN-SUFFIX,openai.com,国外AI',
+      'DOMAIN-SUFFIX,oaistatic.com,国外AI',
+      'DOMAIN-SUFFIX,oaiusercontent.com,国外AI',
+      // Google Gemini
+      'DOMAIN-SUFFIX,gemini.google.com,国外AI',
+      'DOMAIN-SUFFIX,gemini.com,国外AI',
+      'DOMAIN-SUFFIX,generativelanguage.googleapis.com,国外AI',
+      'DOMAIN-SUFFIX,ai.google.dev,国外AI',
+      'DOMAIN-SUFFIX,aistudio.google.com,国外AI',
+      // Anthropic / Claude
+      'DOMAIN-SUFFIX,anthropic.com,国外AI',
+      'DOMAIN-SUFFIX,claude.ai,国外AI',
+      // Meta AI
       'DOMAIN-SUFFIX,meta.ai,国外AI',
       'DOMAIN-SUFFIX,meta.com,国外AI',
+      // Perplexity AI
+      'DOMAIN-SUFFIX,perplexity.ai,国外AI',
+      // Mistral AI
+      'DOMAIN-SUFFIX,mistral.ai,国外AI',
+      // DeepSeek (global)
+      'DOMAIN-SUFFIX,deepseek.com,国外AI',
+      // Midjourney
+      'DOMAIN-SUFFIX,midjourney.com,国外AI',
+      // Poe by Quora
+      'DOMAIN-SUFFIX,poe.com,国外AI',
+      // Cohere
+      'DOMAIN-SUFFIX,cohere.ai,国外AI',
+      'DOMAIN-SUFFIX,cohere.com,国外AI',
+      // Character.AI
+      'DOMAIN-SUFFIX,character.ai,国外AI',
+      // Hugging Face
+      'DOMAIN-SUFFIX,huggingface.co,国外AI',
+      'DOMAIN-SUFFIX,hf.co,国外AI',
+      // Cursor
+      'DOMAIN-SUFFIX,cursor.sh,国外AI',
+      'DOMAIN-SUFFIX,cursor.com,国外AI',
+      // Groq
+      'DOMAIN-SUFFIX,groq.com,国外AI',
+      // Together AI
+      'DOMAIN-SUFFIX,together.ai,国外AI',
+      // Replicate
+      'DOMAIN-SUFFIX,replicate.com,国外AI',
+      // Stability AI
+      'DOMAIN-SUFFIX,stability.ai,国外AI',
+      // Runway
+      'DOMAIN-SUFFIX,runwayml.com,国外AI',
+      // Suno AI
+      'DOMAIN-SUFFIX,suno.ai,国外AI',
+      // You.com
+      'DOMAIN-SUFFIX,you.com,国外AI',
+      // Copilot / Microsoft AI
+      'DOMAIN-SUFFIX,copilot.microsoft.com,国外AI',
+      // Vercel AI
+      'DOMAIN-SUFFIX,v0.dev,国外AI',
+      // Process
       'PROCESS-NAME-REGEX,(?i).*Antigravity.*,国外AI',
       'PROCESS-NAME-REGEX,(?i).*language_server_.*,国外AI',
     ],
@@ -449,7 +519,7 @@ const serviceConfigs = [
     key: 'pixiv',
     name: 'Pixiv',
     icon: 'https://play-lh.googleusercontent.com/8pFuLOHF62ADcN0ISUAyEueA5G8IF49mX_6Az6pQNtokNVHxIVbS1L2NM62H-k02rLM=w240-h480-rw',
-    url: 'http://spclient.wg.spotify.com/signup/public/v1/account',
+    url: 'https://www.pixiv.net/robots.txt',
     rules: ['GEOSITE,pixiv,Pixiv'],
   },
   {
@@ -640,6 +710,18 @@ function main(config) {
       '+.messenger.com',
       '+.fbcdn.net',
       'fbcdn-a.akamaihd.net',
+      '+.openai.com',
+      '+.claude.ai',
+      '+.gemini.google.com',
+      '+.meta.ai',
+      '+.perplexity.ai',
+      '+.mistral.ai',
+      '+.deepseek.com',
+      '+.anthropic.com',
+      '+.poe.com',
+      '+.midjourney.com',
+      '+.cursor.sh',
+      '+.groq.com',
     ],
     'skip-domain': ['Mijia Cloud', '+.oray.com'],
   }
@@ -669,6 +751,46 @@ function main(config) {
     geosite: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat`,
     mmdb: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.metadb`,
     asn: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb`,
+  }
+
+  // 3.2 多订阅聚合：解析订阅链接，生成 proxy-providers
+  const subscriptionLines = subscriptions
+    .split('\n')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0)
+
+  if (subscriptionLines.length > 0) {
+    config['proxy-providers'] = config['proxy-providers'] || {}
+
+    subscriptionLines.forEach((line, index) => {
+      const parts = line.split('|').map((s) => s.trim())
+      let name, url, interval
+
+      if (parts.length === 1) {
+        url = parts[0]
+        name = `订阅${index + 1}`
+        interval = 3600
+      } else if (parts.length === 2) {
+        name = parts[0]
+        url = parts[1]
+        interval = 3600
+      } else {
+        name = parts[0]
+        url = parts[1]
+        interval = parseInt(parts[2], 10) || 3600
+      }
+
+      config['proxy-providers'][name] = {
+        type: 'http',
+        url: url,
+        interval: interval,
+        'health-check': {
+          enable: true,
+          url: 'https://www.gstatic.com/generate_204',
+          interval: 300,
+        },
+      }
+    })
   }
 
   config.proxies.push({
@@ -748,6 +870,27 @@ function main(config) {
     })
   }
 
+  // 全部节点：收集所有通过倍率过滤的节点名
+  const allProxyNames = []
+  regionDefinitions.forEach((r) => {
+    const groupData = regionGroups[r.name]
+    if (groupData && groupData.proxies.length > 0) {
+      allProxyNames.push(...groupData.proxies)
+    }
+  })
+  allProxyNames.push(...otherProxies)
+
+  let allNodesGroup = null
+  if (allProxyNames.length > 0) {
+    allNodesGroup = {
+      name: '全部节点',
+      type: 'select',
+      icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Global.png',
+      proxies: allProxyNames,
+    }
+    // 不加入 groupBaseOption（不需要 url-test 相关属性）
+  }
+
   // 3.3 构建功能策略组
   const functionalGroups = []
 
@@ -755,7 +898,7 @@ function main(config) {
     ...groupBaseOption,
     name: '默认节点',
     type: 'select',
-    proxies: [...regionGroupNames, '其他节点', '直连'].filter(
+    proxies: [...regionGroupNames, '其他节点', '全部节点', '直连'].filter(
       (n) => n !== '其他节点' || otherProxies.length > 0
     ),
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png',
@@ -779,11 +922,11 @@ function main(config) {
 
       let groupProxies
       if (svc.reject) {
-        groupProxies = ['REJECT', '直连', '默认节点']
+        groupProxies = ['REJECT', '直连', '默认节点', '全部节点']
       } else if (svc.key === 'biliintl' || svc.key === 'bahamut') {
-        groupProxies = ['默认节点', '直连', ...regionGroupNames]
+        groupProxies = ['默认节点', '直连', '全部节点', ...regionGroupNames]
       } else {
-        groupProxies = ['默认节点', ...regionGroupNames, '直连']
+        groupProxies = ['默认节点', '全部节点', ...regionGroupNames, '直连']
       }
 
       functionalGroups.push({
@@ -813,28 +956,32 @@ function main(config) {
       ...groupBaseOption,
       name: '下载软件',
       type: 'select',
-      proxies: ['直连', 'REJECT', '默认节点', '国内网站', ...regionGroupNames],
+      proxies: ['直连', 'REJECT', '默认节点', '国内网站', '全部节点', ...regionGroupNames],
       icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Download.png',
     },
     {
       ...groupBaseOption,
       name: '其他外网',
       type: 'select',
-      proxies: ['默认节点', '国内网站', ...regionGroupNames],
+      proxies: ['默认节点', '国内网站', '全部节点', ...regionGroupNames],
       icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Streaming!CN.png',
     },
     {
       ...groupBaseOption,
       name: '国内网站',
       type: 'select',
-      proxies: ['直连', '默认节点', ...regionGroupNames],
+      proxies: ['直连', '默认节点', '全部节点', ...regionGroupNames],
       url: 'https://wifi.vivo.com.cn/generate_204',
       icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/StreamingCN.png',
     }
   )
 
   // 3.5 组装最终结果
-  config['proxy-groups'] = [...functionalGroups, ...generatedRegionGroups]
+  const allGroups = [...functionalGroups, ...generatedRegionGroups]
+  if (allNodesGroup) {
+    allGroups.push(allNodesGroup)
+  }
+  config['proxy-groups'] = allGroups
 
   config['rules'] = rules
   config['rule-providers'] = ruleProviders

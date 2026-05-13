@@ -35,7 +35,7 @@ proxy-groups:
       - 其它地区
       - 全部节点
   # 功能分组
-  - name: OpenAI
+  - name: 国外AI
     icon: https://fastly.jsdelivr.net/gh/Koolson/Qure/IconSet/Color/ChatGPT.png
     type: select
     proxies:
@@ -350,7 +350,20 @@ proxy-groups:
     include-all: true
 rules:
   - SCRIPT,quic,REJECT
-  - RULE-SET,category-ai-chat-!cn,OpenAI
+  - RULE-SET,category-ai-chat-!cn,国外AI
+  - RULE-SET,jetbrains-ai,国外AI
+  - DOMAIN-SUFFIX,meta.ai,国外AI
+  - DOMAIN-SUFFIX,perplexity.ai,国外AI
+  - DOMAIN-SUFFIX,mistral.ai,国外AI
+  - DOMAIN-SUFFIX,deepseek.com,国外AI
+  - DOMAIN-SUFFIX,midjourney.com,国外AI
+  - DOMAIN-SUFFIX,poe.com,国外AI
+  - DOMAIN-SUFFIX,cohere.ai,国外AI
+  - DOMAIN-SUFFIX,character.ai,国外AI
+  - DOMAIN-SUFFIX,huggingface.co,国外AI
+  - DOMAIN-SUFFIX,groq.com,国外AI
+  - DOMAIN-SUFFIX,stability.ai,国外AI
+  - DOMAIN-SUFFIX,suno.ai,国外AI
   - RULE-SET,telegram,Telegram
   - RULE-SET,biliintl,哔哩东南亚
   - RULE-SET,bahamut,巴哈姆特
@@ -376,6 +389,12 @@ rule-providers:
     behavior: domain
     format: text
     url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/category-ai-chat-!cn.list
+  jetbrains-ai:
+    type: http
+    interval: 86400
+    behavior: domain
+    format: text
+    url: https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/jetbrains-ai.list
   telegram:
     type: http
     interval: 86400
