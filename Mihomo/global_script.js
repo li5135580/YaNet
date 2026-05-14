@@ -690,7 +690,7 @@ function main(config) {
   config['tcp-concurrent'] = true
   config['keep-alive-interval'] = 1800
   config['find-process-mode'] = 'strict'
-  config['geodata-mode'] = false
+  config['geodata-mode'] = true
   config['geodata-loader'] = 'memconservative'
   config['geo-auto-update'] = true
   config['geo-update-interval'] = 24
@@ -731,7 +731,7 @@ function main(config) {
   }
   config['tun'] = {
     enable: true,
-    stack: 'mixed',
+    stack: 'system',
     device: 'utun1999',
     'auto-route': true,
     'auto-redirect': true,
