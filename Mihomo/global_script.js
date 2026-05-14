@@ -159,8 +159,6 @@ let ruleOptions = {
   disney: false,
   pixiv: false,
   hbo: false,
-  mediaHMT: false,
-  biliintl: false,
   tvb: false,
   hulu: false,
   primevideo: false,
@@ -185,7 +183,6 @@ if (ruleSet === 'all') {
 
 // 初始规则
 const rules = [
-  'RULE-SET,applications,下载软件',
   'PROCESS-NAME-REGEX,(?i).*Oray.*,直连',
   'PROCESS-NAME-REGEX,(?i).*Sunlogin.*,直连',
   'PROCESS-NAME-REGEX,(?i).*AweSun.*,直连',
@@ -211,6 +208,7 @@ const rules = [
   'PROCESS-NAME-REGEX,(?i).*cloudflared.*,直连',
   'PROCESS-NAME-REGEX,(?i).*xmqtunnel.*,直连',
   'PROCESS-NAME-REGEX,(?i).*Navicat.*,直连',
+  'RULE-SET,applications,下载软件',
   'DOMAIN-SUFFIX,iepose.com,直连',
   'DOMAIN-SUFFIX,iepose.cn,直连',
   'DOMAIN-SUFFIX,nblink.cc,直连',
@@ -420,6 +418,95 @@ function isAdInfoNode(name) {
 // Icons 更新为 GitHub Raw
 const serviceConfigs = [
   {
+    key: 'ads',
+    name: '广告过滤',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Advertising.png',
+    rules: [
+      'GEOSITE,category-ads-all,广告过滤',
+      'RULE-SET,adblockmihomo,广告过滤',
+    ],
+    providers: [
+      {
+        key: 'adblockmihomo',
+        url: 'https://github.com/217heidai/adblockfilters/raw/refs/heads/main/rules/adblockmihomo.mrs',
+        path: './ruleset/adblockfilters/adblockmihomo.mrs',
+        format: 'mrs',
+        behavior: 'domain',
+      },
+    ],
+    reject: true,
+  },
+  {
+    key: 'netflix',
+    name: 'NETFLIX',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Netflix_Letter.png',
+    url: 'https://api.fast.com/netflix/speedtest/v2?https=true',
+    rules: ['GEOSITE,netflix,NETFLIX'],
+  },
+  {
+    key: 'disney',
+    name: 'Disney+',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Disney+.png',
+    url: 'https://disney.api.edge.bamgrid.com/devices',
+    rules: ['GEOSITE,disney,Disney+'],
+  },
+  {
+    key: 'hbo',
+    name: 'HBO',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/HBO.png',
+    url: 'https://www.hbo.com/favicon.ico',
+    rules: ['GEOSITE,hbo,HBO'],
+  },
+  {
+    key: 'hulu',
+    name: 'Hulu',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Hulu.png',
+    url: 'https://auth.hulu.com/v4/web/password/authenticate',
+    rules: ['GEOSITE,hulu,Hulu'],
+  },
+  {
+    key: 'primevideo',
+    name: 'Prime Video',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Prime_Video.png',
+    url: 'https://m.media-amazon.com/images/G/01/digital/video/web/logo-min-remaster.png',
+    rules: ['GEOSITE,primevideo,Prime Video'],
+  },
+  {
+    key: 'youtube',
+    name: 'YouTube',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/YouTube.png',
+    url: 'https://www.youtube.com/s/desktop/494dd881/img/favicon.ico',
+    rules: ['GEOSITE,youtube,YouTube'],
+  },
+  {
+    key: 'spotify',
+    name: 'Spotify',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Spotify.png',
+    url: 'https://spclient.wg.spotify.com/signup/public/v1/account',
+    rules: ['GEOSITE,spotify,Spotify'],
+  },
+  {
+    key: 'tiktok',
+    name: 'Tiktok',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/TikTok.png',
+    url: 'https://www.tiktok.com/',
+    rules: ['GEOSITE,tiktok,Tiktok'],
+  },
+  {
+    key: 'bahamut',
+    name: '巴哈姆特',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Bahamut.png',
+    url: 'https://ani.gamer.com.tw/ajax/getdeviceid.php',
+    rules: ['GEOSITE,bahamut,巴哈姆特'],
+  },
+  {
+    key: 'pixiv',
+    name: 'Pixiv',
+    icon: 'https://play-lh.googleusercontent.com/8pFuLOHF62ADcN0ISUAyEueA5G8IF49mX_6Az6pQNtokNVHxIVbS1L2NM62H-k02rLM=w240-h480-rw',
+    url: 'https://www.pixiv.net/robots.txt',
+    rules: ['GEOSITE,pixiv,Pixiv'],
+  },
+  {
     key: 'openai',
     name: '国外AI',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/ChatGPT.png',
@@ -488,116 +575,6 @@ const serviceConfigs = [
     ],
   },
   {
-    key: 'youtube',
-    name: 'YouTube',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/YouTube.png',
-    url: 'https://www.youtube.com/s/desktop/494dd881/img/favicon.ico',
-    rules: ['GEOSITE,youtube,YouTube'],
-  },
-  {
-    key: 'mediaHMT',
-    name: '港澳台媒体',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/TVB.png',
-    url: 'https://viu.tv/',
-    rules: [
-      'GEOSITE,tvb,港澳台媒体',
-      'GEOSITE,hkt,港澳台媒体',
-      'GEOSITE,hkbn,港澳台媒体',
-      'GEOSITE,hkopentv,港澳台媒体',
-      'GEOSITE,hkedcity,港澳台媒体',
-      'GEOSITE,hkgolden,港澳台媒体',
-      'GEOSITE,hketgroup,港澳台媒体',
-      'RULE-SET,hk-media,港澳台媒体',
-      'RULE-SET,tw-media,港澳台媒体',
-    ],
-    providers: [
-      {
-        key: 'hk-media',
-        url: 'https://ruleset.skk.moe/Clash/non_ip/stream_hk.txt',
-        path: './ruleset/ruleset.skk.moe/stream_hk.txt',
-        format: 'text',
-        behavior: 'classical',
-      },
-      {
-        key: 'tw-media',
-        url: 'https://ruleset.skk.moe/Clash/non_ip/stream_tw.txt',
-        path: './ruleset/ruleset.skk.moe/stream_tw.txt',
-        format: 'text',
-        behavior: 'classical',
-      },
-    ],
-  },
-  {
-    key: 'biliintl',
-    name: '哔哩哔哩东南亚',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/bilibili_3.png',
-    url: 'https://www.bilibili.tv/',
-    rules: ['GEOSITE,biliintl,哔哩哔哩东南亚'],
-  },
-  {
-    key: 'bahamut',
-    name: '巴哈姆特',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Bahamut.png',
-    url: 'https://ani.gamer.com.tw/ajax/getdeviceid.php',
-    rules: ['GEOSITE,bahamut,巴哈姆特'],
-  },
-  {
-    key: 'disney',
-    name: 'Disney+',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Disney+.png',
-    url: 'https://disney.api.edge.bamgrid.com/devices',
-    rules: ['GEOSITE,disney,Disney+'],
-  },
-  {
-    key: 'netflix',
-    name: 'NETFLIX',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Netflix_Letter.png',
-    url: 'https://api.fast.com/netflix/speedtest/v2?https=true',
-    rules: ['GEOSITE,netflix,NETFLIX'],
-  },
-  {
-    key: 'tiktok',
-    name: 'Tiktok',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/TikTok.png',
-    url: 'https://www.tiktok.com/',
-    rules: ['GEOSITE,tiktok,Tiktok'],
-  },
-  {
-    key: 'spotify',
-    name: 'Spotify',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Spotify.png',
-    url: 'https://spclient.wg.spotify.com/signup/public/v1/account',
-    rules: ['GEOSITE,spotify,Spotify'],
-  },
-  {
-    key: 'pixiv',
-    name: 'Pixiv',
-    icon: 'https://play-lh.googleusercontent.com/8pFuLOHF62ADcN0ISUAyEueA5G8IF49mX_6Az6pQNtokNVHxIVbS1L2NM62H-k02rLM=w240-h480-rw',
-    url: 'https://www.pixiv.net/robots.txt',
-    rules: ['GEOSITE,pixiv,Pixiv'],
-  },
-  {
-    key: 'hbo',
-    name: 'HBO',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/HBO.png',
-    url: 'https://www.hbo.com/favicon.ico',
-    rules: ['GEOSITE,hbo,HBO'],
-  },
-  {
-    key: 'primevideo',
-    name: 'Prime Video',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Prime_Video.png',
-    url: 'https://m.media-amazon.com/images/G/01/digital/video/web/logo-min-remaster.png',
-    rules: ['GEOSITE,primevideo,Prime Video'],
-  },
-  {
-    key: 'hulu',
-    name: 'Hulu',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Hulu.png',
-    url: 'https://auth.hulu.com/v4/web/password/authenticate',
-    rules: ['GEOSITE,hulu,Hulu'],
-  },
-  {
     key: 'telegram',
     name: 'Telegram',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Telegram.png',
@@ -617,34 +594,6 @@ const serviceConfigs = [
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Line.png',
     url: 'https://line.me/page-data/app-data.json',
     rules: ['GEOSITE,line,Line'],
-  },
-  {
-    key: 'games',
-    name: '游戏专用',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Game.png',
-    rules: [
-      'GEOSITE,category-games@cn,国内网站',
-      'GEOSITE,category-games,游戏专用',
-    ],
-  },
-  {
-    key: 'ads',
-    name: '广告过滤',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Advertising.png',
-    rules: [
-      'GEOSITE,category-ads-all,广告过滤',
-      'RULE-SET,adblockmihomo,广告过滤',
-    ],
-    providers: [
-      {
-        key: 'adblockmihomo',
-        url: 'https://github.com/217heidai/adblockfilters/raw/refs/heads/main/rules/adblockmihomo.mrs',
-        path: './ruleset/adblockfilters/adblockmihomo.mrs',
-        format: 'mrs',
-        behavior: 'domain',
-      },
-    ],
-    reject: true,
   },
   {
     key: 'apple',
@@ -673,6 +622,15 @@ const serviceConfigs = [
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Microsoft.png',
     url: 'https://www.msftconnecttest.com/connecttest.txt',
     rules: ['GEOSITE,microsoft@cn,国内网站', 'GEOSITE,microsoft,微软服务'],
+  },
+  {
+    key: 'games',
+    name: '游戏专用',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Game.png',
+    rules: [
+      'GEOSITE,category-games@cn,国内网站',
+      'GEOSITE,category-games,游戏专用',
+    ],
   },
   {
     key: 'japan',
@@ -756,25 +714,12 @@ function main(config) {
     'skip-src-address': skipIps,
     'skip-dst-address': skipIps,
     'force-domain': [
-      '+.google.com',
-      '+.googleapis.com',
-      '+.googleusercontent.com',
-      '+.youtube.com',
-      '+.facebook.com',
-      '+.messenger.com',
-      '+.fbcdn.net',
-      'fbcdn-a.akamaihd.net',
-      '+.openai.com',
-      '+.claude.ai',
-      '+.gemini.google.com',
-      '+.meta.ai',
-      '+.perplexity.ai',
-      '+.mistral.ai',
-      '+.anthropic.com',
-      '+.poe.com',
-      '+.midjourney.com',
-      '+.cursor.sh',
-      '+.groq.com',
+      'geosite:google',
+      'geosite:youtube',
+      'geosite:category-ai-!cn',
+      'geosite:netflix',
+      'geosite:facebook',
+      'geosite:twitter',
     ],
     'skip-domain': ['Mijia Cloud', '+.oray.com'],
   }
@@ -998,7 +943,7 @@ function main(config) {
       let groupProxies
       if (svc.reject) {
         groupProxies = ['REJECT', '直连', '默认节点', ...allLocalProxyNames]
-      } else if (svc.key === 'biliintl' || svc.key === 'bahamut') {
+      } else if (svc.key === 'bahamut') {
         groupProxies = ['默认节点', '直连', ...allLocalProxyNames]
       } else {
         groupProxies = ['默认节点', ...allLocalProxyNames, '直连']
