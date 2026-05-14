@@ -378,6 +378,20 @@ function isAdInfoNode(name) {
 // Icons 更新为 GitHub Raw
 const serviceConfigs = [
   {
+    key: 'github',
+    name: 'Github',
+    icon: 'https://raw.githubusercontent.com/Lanlan13-14/Icon-for-webui/main/github.png',
+    url: 'https://github.com/robots.txt',
+    rules: ['GEOSITE,github,Github'],
+  },
+  {
+    key: 'microsoft',
+    name: '微软服务',
+    icon: 'https://raw.githubusercontent.com/Lanlan13-14/Icon-for-webui/main/microsoft.png',
+    url: 'https://www.msftconnecttest.com/connecttest.txt',
+    rules: ['GEOSITE,microsoft@cn,国内网站', 'GEOSITE,microsoft,微软服务'],
+  },
+  {
     key: 'openai',
     name: '国外AI',
     icon: 'https://raw.githubusercontent.com/Lanlan13-14/Icon-for-webui/main/ai.png',
@@ -444,6 +458,20 @@ const serviceConfigs = [
       'PROCESS-NAME-REGEX,(?i).*Antigravity.*,国外AI',
       'PROCESS-NAME-REGEX,(?i).*language_server_.*,国外AI',
     ],
+  },
+  {
+    key: 'apple',
+    name: '苹果服务',
+    icon: 'https://raw.githubusercontent.com/Lanlan13-14/Icon-for-webui/main/apple.png',
+    url: 'https://www.apple.com/library/test/success.html',
+    rules: ['GEOSITE,apple-cn,苹果服务'],
+  },
+  {
+    key: 'google',
+    name: '谷歌服务',
+    icon: 'https://raw.githubusercontent.com/Lanlan13-14/Icon-for-webui/main/google.png',
+    url: 'https://www.google.com/generate_204',
+    rules: ['GEOSITE,google,谷歌服务'],
   },
   {
     key: 'youtube',
@@ -563,34 +591,6 @@ const serviceConfigs = [
       },
     ],
     reject: true,
-  },
-  {
-    key: 'apple',
-    name: '苹果服务',
-    icon: 'https://raw.githubusercontent.com/Lanlan13-14/Icon-for-webui/main/apple.png',
-    url: 'https://www.apple.com/library/test/success.html',
-    rules: ['GEOSITE,apple-cn,苹果服务'],
-  },
-  {
-    key: 'google',
-    name: '谷歌服务',
-    icon: 'https://raw.githubusercontent.com/Lanlan13-14/Icon-for-webui/main/google.png',
-    url: 'https://www.google.com/generate_204',
-    rules: ['GEOSITE,google,谷歌服务'],
-  },
-  {
-    key: 'github',
-    name: 'Github',
-    icon: 'https://raw.githubusercontent.com/Lanlan13-14/Icon-for-webui/main/github.png',
-    url: 'https://github.com/robots.txt',
-    rules: ['GEOSITE,github,Github'],
-  },
-  {
-    key: 'microsoft',
-    name: '微软服务',
-    icon: 'https://raw.githubusercontent.com/Lanlan13-14/Icon-for-webui/main/microsoft.png',
-    url: 'https://www.msftconnecttest.com/connecttest.txt',
-    rules: ['GEOSITE,microsoft@cn,国内网站', 'GEOSITE,microsoft,微软服务'],
   },
 ]
 
