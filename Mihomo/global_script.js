@@ -206,7 +206,6 @@ const rules = [
   'PROCESS-NAME-REGEX,(?i).*cloudflared.*,直连',
   'PROCESS-NAME-REGEX,(?i).*xmqtunnel.*,直连',
   'PROCESS-NAME-REGEX,(?i).*Navicat.*,直连',
-  'RULE-SET,applications,下载软件',
   'DOMAIN-SUFFIX,iepose.com,直连',
   'DOMAIN-SUFFIX,iepose.cn,直连',
   'DOMAIN-SUFFIX,nblink.cc,直连',
@@ -965,12 +964,6 @@ function main(config) {
   }
 
   functionalGroups.push(
-    buildFixedGroup({
-      name: '下载软件',
-      type: 'select',
-      proxies: ['直连', 'REJECT', '默认节点', '国内网站', ...allLocalProxyNames],
-      icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Download.png',
-    }),
     buildFixedGroup({
       name: '其他外网',
       type: 'select',
