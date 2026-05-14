@@ -147,7 +147,7 @@ foreignDNS = stringToArray(foreignDNS)
  */
 let ruleOptions = {
   apple: false,
-  microsoft: true
+  microsoft: true,
   github: true,
   google: true,
   openai: true,
