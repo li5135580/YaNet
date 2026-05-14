@@ -147,12 +147,12 @@ foreignDNS = stringToArray(foreignDNS)
  */
 let ruleOptions = {
   apple: false,
-  microsoft: false,
-  github: false,
-  google: false,
-  openai: false,
-  spotify: false,
-  youtube: false,
+  microsoft: true
+  github: true,
+  google: true,
+  openai: true,
+  spotify: true,
+  youtube: true,
   bahamut: false,
   netflix: false,
   tiktok: false,
@@ -165,7 +165,7 @@ let ruleOptions = {
   line: false,
   whatsapp: false,
   games: false,
-  ads: false,
+  ads: true,
 }
 
 if (ruleSet === 'all') {
