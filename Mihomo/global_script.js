@@ -4,21 +4,6 @@
  * Github：https://github.com/dahaha-365/YaNet
  */
 
-// --- 0. GitHub Raw 链接常量 ---
-// 修改 RAW_BASE 即可统一切换镜像源，如: 'https://ghfast.top/https://raw.githubusercontent.com'
-const RAW_BASE = 'https://raw.githubusercontent.com'
-const RULE_URLS = {
-  applications: `${RAW_BASE}/DustinWin/ruleset_geodata/refs/heads/mihomo-ruleset/applications.list`,
-  adblockmihomo: 'https://github.com/217heidai/adblockfilters/raw/refs/heads/main/rules/adblockmihomo.mrs',
-  categoryBankJp: `${RAW_BASE}/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-bank-jp.mrs`,
-}
-const GEO_URLS = {
-  geoip: 'https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat',
-  geosite: 'https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat',
-  mmdb: 'https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.metadb',
-  asn: 'https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb',
-}
-
 function stringToArray(val) {
   if (Array.isArray(val)) return val
   if (typeof val !== 'string') return []
@@ -87,7 +72,6 @@ const args =
         mode: 'default',
         ipv6: false,
         logLevel: 'error',
-        verbose: false,
         githubProxy: 'https://ghfast.top/',
         subscriptions: _proxyProviders,
       }
@@ -97,8 +81,8 @@ const args =
  */
 let {
   enable = args.enable || true,
-  ruleSet = args.ruleSet || 'all',
-  regionSet = args.regionSet || 'all',
+  ruleSet = args.ruleSet || 'all', // 支持 'all' 或 'openai,youtube,ads' 这种格式
+  regionSet = args.regionSet || 'all', // 匹配 regionDefinitions.name 前两个字母 (严格大小写)
   excludeHighPercentage = args.excludeHighPercentage || true,
   globalRatioLimit = args.globalRatioLimit || 2,
   skipIps = args.skipIps || _skipIps,
@@ -109,22 +93,9 @@ let {
   mode = args.mode || '',
   ipv6 = args.ipv6 || false,
   logLevel = args.logLevel || 'error',
-  verbose = args.verbose || false,
   githubProxy = args.githubProxy || 'https://ghfast.top/',
   subscriptions = args.subscriptions || _proxyProviders,
 } = args
-
-function _log(level, ...msgs) {
-  if (!verbose && level === 'debug') return
-  const prefix = `[YaNet][${level.toUpperCase()}]`
-  if (level === 'warn') {
-    console.warn(prefix, ...msgs)
-  } else if (level === 'error') {
-    console.error(prefix, ...msgs)
-  } else {
-    console.log(prefix, ...msgs)
-  }
-}
 
 /**
  * 模式配置
@@ -170,15 +141,15 @@ foreignDNS = stringToArray(foreignDNS)
 
 /**
  * 分流规则配置，会自动生成对应的策略组
- * 设置的时候可遵循"最小，可用"原则，把自己不需要的规则全禁用掉，提高效率
+ * 设置的时候可遵循“最小，可用”原则，把自己不需要的规则全禁用掉，提高效率
  * true = 启用
  * false = 禁用
  */
 let ruleOptions = {
   apple: false,
   microsoft: false,
-  github: true,
-  google: true,
+  github: false,
+  google: false,
   openai: false,
   spotify: false,
   youtube: false,
@@ -189,6 +160,8 @@ let ruleOptions = {
   pixiv: false,
   hbo: false,
   mediaHMT: false,
+  biliintl: false,
+  tvb: false,
   hulu: false,
   primevideo: false,
   telegram: false,
@@ -196,7 +169,7 @@ let ruleOptions = {
   whatsapp: false,
   games: false,
   japan: false,
-  ads: true,
+  ads: false,
 }
 
 if (ruleSet === 'all') {
@@ -210,123 +183,120 @@ if (ruleSet === 'all') {
   });
 }
 
-// --- 初始规则 (工厂函数，每次 main() 调用创建新数组) ---
-// PROCESS-NAME-REGEX 集中放在最前面
-function _createInitialRules() {
-  return [
-    'PROCESS-NAME-REGEX,(?i).*Oray.*,直连',
-    'PROCESS-NAME-REGEX,(?i).*Sunlogin.*,直连',
-    'PROCESS-NAME-REGEX,(?i).*AweSun.*,直连',
-    'PROCESS-NAME-REGEX,(?i).*NodeBaby.*,直连',
-    'PROCESS-NAME-REGEX,(?i).*Node Baby.*,直连',
-    'PROCESS-NAME-REGEX,(?i).*nblink.*,直连',
-    'PROCESS-NAME-REGEX,(?i).*owjdxb.*,直连',
-    'PROCESS-NAME-REGEX,(?i).*vpn.*,直连',
-    'PROCESS-NAME-REGEX,(?i).*vnc.*,直连',
-    'PROCESS-NAME-REGEX,(?i).*tvnserver.*,直连',
-    'PROCESS-NAME-REGEX,(?i).*节点小宝.*,直连',
-    'PROCESS-NAME-REGEX,(?i).*AnyDesk.*,直连',
-    'PROCESS-NAME-REGEX,(?i).*ToDesk.*,直连',
-    'PROCESS-NAME-REGEX,(?i).*RustDesk.*,直连',
-    'PROCESS-NAME-REGEX,(?i).*TeamViewer.*,直连',
-    'PROCESS-NAME-REGEX,(?i).*Zerotier.*,直连',
-    'PROCESS-NAME-REGEX,(?i).*Tailscaled.*,直连',
-    'PROCESS-NAME-REGEX,(?i).*phddns.*,直连',
-    'PROCESS-NAME-REGEX,(?i).*ngrok.*,直连',
-    'PROCESS-NAME-REGEX,(?i).*frpc.*,直连',
-    'PROCESS-NAME-REGEX,(?i).*frps.*,直连',
-    'PROCESS-NAME-REGEX,(?i).*natapp.*,直连',
-    'PROCESS-NAME-REGEX,(?i).*cloudflared.*,直连',
-    'PROCESS-NAME-REGEX,(?i).*xmqtunnel.*,直连',
-    'PROCESS-NAME-REGEX,(?i).*Navicat.*,直连',
-    'RULE-SET,applications,下载软件',
-    'DOMAIN-SUFFIX,iepose.com,直连',
-    'DOMAIN-SUFFIX,iepose.cn,直连',
-    'DOMAIN-SUFFIX,nblink.cc,直连',
-    'DOMAIN-SUFFIX,ionewu.com,直连',
-    'DOMAIN-SUFFIX,vicp.net,直连',
-  ]
-}
+// 初始规则
+const rules = [
+  'RULE-SET,applications,下载软件',
+  'PROCESS-NAME-REGEX,(?i).*Oray.*,直连',
+  'PROCESS-NAME-REGEX,(?i).*Sunlogin.*,直连',
+  'PROCESS-NAME-REGEX,(?i).*AweSun.*,直连',
+  'PROCESS-NAME-REGEX,(?i).*NodeBaby.*,直连',
+  'PROCESS-NAME-REGEX,(?i).*Node Baby.*,直连',
+  'PROCESS-NAME-REGEX,(?i).*nblink.*,直连',
+  'PROCESS-NAME-REGEX,(?i).*owjdxb.*,直连',
+  'PROCESS-NAME-REGEX,(?i).*vpn.*,直连',
+  'PROCESS-NAME-REGEX,(?i).*vnc.*,直连',
+  'PROCESS-NAME-REGEX,(?i).*tvnserver.*,直连',
+  'PROCESS-NAME-REGEX,(?i).*节点小宝.*,直连',
+  'PROCESS-NAME-REGEX,(?i).*AnyDesk.*,直连',
+  'PROCESS-NAME-REGEX,(?i).*ToDesk.*,直连',
+  'PROCESS-NAME-REGEX,(?i).*RustDesk.*,直连',
+  'PROCESS-NAME-REGEX,(?i).*TeamViewer.*,直连',
+  'PROCESS-NAME-REGEX,(?i).*Zerotier.*,直连',
+  'PROCESS-NAME-REGEX,(?i).*Tailscaled.*,直连',
+  'PROCESS-NAME-REGEX,(?i).*phddns.*,直连',
+  'PROCESS-NAME-REGEX,(?i).*ngrok.*,直连',
+  'PROCESS-NAME-REGEX,(?i).*frpc.*,直连',
+  'PROCESS-NAME-REGEX,(?i).*frps.*,直连',
+  'PROCESS-NAME-REGEX,(?i).*natapp.*,直连',
+  'PROCESS-NAME-REGEX,(?i).*cloudflared.*,直连',
+  'PROCESS-NAME-REGEX,(?i).*xmqtunnel.*,直连',
+  'PROCESS-NAME-REGEX,(?i).*Navicat.*,直连',
+  'DOMAIN-SUFFIX,iepose.com,直连',
+  'DOMAIN-SUFFIX,iepose.cn,直连',
+  'DOMAIN-SUFFIX,nblink.cc,直连',
+  'DOMAIN-SUFFIX,ionewu.com,直连',
+  'DOMAIN-SUFFIX,vicp.net,直连',
+]
 
-// 地区定义 (Icons 使用 RAW_BASE 常量)
+// 地区定义 (Icons 更新为 GitHub Raw)
 const allRegionDefinitions = [
   {
     name: 'HK香港',
     regex: /港|🇭🇰|hk|hongkong|hong kong/i,
     filter: '(?i)港|🇭🇰|hk|hongkong|hong kong',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/Hong_Kong.png`,
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Hong_Kong.png',
   },
   {
     name: 'US美国',
     regex: /(?!.*aus)(?=.*(美|🇺🇸|us(?!t)|usa|american|united states)).*/i,
     filter: '(?i)(?!.*aus)(?=.*(美|🇺🇸|us(?!t)|usa|american|united states)).*',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/United_States.png`,
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_States.png',
   },
   {
     name: 'JP日本',
     regex: /日本|🇯🇵|jp|japan/i,
     filter: '(?i)日本|🇯🇵|jp|japan',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/Japan.png`,
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Japan.png',
   },
   {
     name: 'KR韩国',
     regex: /韩|🇰🇷|kr|korea/i,
     filter: '(?i)韩|🇰🇷|kr|korea',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/Korea.png`,
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Korea.png',
   },
   {
     name: 'SG新加坡',
     regex: /新加坡|🇸🇬|sg|singapore/i,
     filter: '(?i)新加坡|🇸🇬|sg|singapore',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/Singapore.png`,
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Singapore.png',
   },
   {
     name: 'CN中国大陆',
     regex: /中国|🇨🇳|cn|china/i,
     filter: '(?i)中国|🇨🇳|cn|china',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/China_Map.png`,
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/China_Map.png',
   },
   {
     name: 'TW台湾省',
     regex: /台湾|台灣|🇹🇼|tw|taiwan|tai wan/i,
     filter: '(?i)台湾|台灣|🇹🇼|tw|taiwan|tai wan',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/China.png`,
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/China.png',
   },
   {
     name: 'GB英国',
     regex: /英|🇬🇧|uk|united kingdom|great britain/i,
     filter: '(?i)英|🇬🇧|uk|united kingdom|great britain',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/United_Kingdom.png`,
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_Kingdom.png',
   },
   {
     name: 'DE德国',
     regex: /德国|🇩🇪|de|germany/i,
     filter: '(?i)德国|🇩🇪|de|germany',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/Germany.png`,
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Germany.png',
   },
   {
     name: 'MY马来西亚',
     regex: /马来|🇲🇾|my|malaysia/i,
     filter: '(?i)马来|🇲🇾|my|malaysia',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/Malaysia.png`,
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Malaysia.png',
   },
   {
     name: 'TK土耳其',
     regex: /土耳其|🇹🇷|tk|turkey/i,
     filter: '(?i)土耳其|🇹🇷|tk|turkey',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/Turkey.png`,
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Turkey.png',
   },
   {
     name: 'CA加拿大',
     regex: /加拿大|🇨🇦|ca|canada/i,
     filter: '(?i)加拿大|🇨🇦|ca|canada',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/Canada.png`,
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Canada.png',
   },
   {
     name: 'AU澳大利亚',
     regex: /澳大利亚|🇦🇺|au|australia|sydney/i,
     filter: '(?i)澳大利亚|🇦🇺|au|australia|sydney',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/Australia.png`,
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Australia.png',
   },
 ]
 
@@ -336,7 +306,7 @@ if (regionSet === 'all') {
 } else {
   const enabledRegions = regionSet.split(';').map(s => s.trim())
   regionDefinitions = allRegionDefinitions.filter(r => {
-    const prefix = r.name.substring(0, 2)
+    const prefix = r.name.substring(0, 2) // 获取前两个字母
     return enabledRegions.includes(prefix)
   })
 }
@@ -349,7 +319,7 @@ const dnsConfig = {
   'prefer-h3': true,
   'use-hosts': true,
   'use-system-hosts': true,
-  'respect-rules': true,
+  // 'respect-rules': true,
   'enhanced-mode': 'fake-ip',
   'fake-ip-range': '198.18.0.0/16',
   'fake-ip-filter-mode': 'whitelist',
@@ -369,6 +339,11 @@ const dnsConfig = {
   nameserver: chinaDNS,
   'default-nameserver': defaultDNS,
   'direct-nameserver': directDNS,
+  // fallback: foreignDNS,
+  // 'fallback-filter': {
+  //   geoip: true,
+  //   'geoip-code': 'CN',
+  // },
   'proxy-server-nameserver': chinaDNS,
   'nameserver-policy': {
     'geosite:private': 'system',
@@ -393,30 +368,20 @@ const groupBaseOption = {
   hidden: false,
 }
 
-// 预定义 Rule Providers (工厂函数，每次 main() 调用创建新对象)
-function _createInitialRuleProviders() {
-  return {
-    applications: {
-      ...ruleProviderCommon,
-      behavior: 'classical',
-      format: 'text',
-      url: RULE_URLS.applications,
-      path: './ruleset/DustinWin/applications.list',
-    },
-  }
+// 预定义 Rule Providers
+const ruleProviders = {
+  applications: {
+    ...ruleProviderCommon,
+    behavior: 'classical',
+    format: 'text',
+    url: 'https://github.com/DustinWin/ruleset_geodata/raw/refs/heads/mihomo-ruleset/applications.list',
+    path: './ruleset/DustinWin/applications.list',
+  },
 }
 
-// --- 2. 倍率解析 ---
-// 支持: x2.5, 2.0x, x2, 2x, 倍率2.5, 2.5倍率, ✖2.0 等变体
-const multiplierRegex = /([1-9]\d*(?:\.\d+)?|0\.\d+)\s*[xX✕✖⨉倍率]|[xX✕✖⨉倍率]\s*([1-9]\d*(?:\.\d+)?|0\.\d+)/i
-
-function parseMultiplier(name) {
-  const m = name.match(multiplierRegex)
-  if (m) {
-    return parseFloat(m[1] || m[2])
-  }
-  return null
-}
+// 倍率正则预编译
+const multiplierRegex =
+  /(?<=[xX✕✖⨉倍率])([1-9]+(\.\d+)*|0{1}\.\d+)(?=[xX✕✖⨉倍率])*/i
 
 // 机场广告/信息节点过滤
 const adInfoKeywords = [
@@ -444,121 +409,20 @@ const adInfoRegexes = [
   /\d{4}[-/]\d{2}[-/]\d{2}/,
 ]
 
-const _adInfoCache = new Map()
-
 function isAdInfoNode(name) {
   if (!name || typeof name !== 'string') return false
-  const cached = _adInfoCache.get(name)
-  if (cached !== undefined) return cached
-  let result = false
-  if (adInfoKeywords.some((kw) => name.includes(kw))) {
-    result = true
-  } else if (adInfoRegexes.some((re) => re.test(name))) {
-    result = true
-  }
-  _adInfoCache.set(name, result)
-  return result
+  if (adInfoKeywords.some((kw) => name.includes(kw))) return true
+  if (adInfoRegexes.some((re) => re.test(name))) return true
+  return false
 }
 
-// --- 3. 服务规则数据结构 ---
-// 排序原则: 广告过滤最前 → 特定媒体(Netflix,Disney+等)在通用规则前 → AI → 通讯 → 通用服务 → 游戏 → 地区
+// --- 2. 服务规则数据结构 ---
+// Icons 更新为 GitHub Raw
 const serviceConfigs = [
-  // --- 广告过滤 (最前) ---
-  {
-    key: 'ads',
-    name: '广告过滤',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/Advertising.png`,
-    rules: [
-      'GEOSITE,category-ads-all,广告过滤',
-      'RULE-SET,adblockmihomo,广告过滤',
-    ],
-    providers: [
-      {
-        key: 'adblockmihomo',
-        url: RULE_URLS.adblockmihomo,
-        path: './ruleset/adblockfilters/adblockmihomo.mrs',
-        format: 'mrs',
-        behavior: 'domain',
-      },
-    ],
-    reject: true,
-  },
-  // --- 特定流媒体 (在通用规则前) ---
-  {
-    key: 'netflix',
-    name: 'NETFLIX',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/Netflix_Letter.png`,
-    url: 'https://api.fast.com/netflix/speedtest/v2?https=true',
-    rules: ['GEOSITE,netflix,NETFLIX'],
-  },
-  {
-    key: 'disney',
-    name: 'Disney+',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/Disney+.png`,
-    url: 'https://disney.api.edge.bamgrid.com/devices',
-    rules: ['GEOSITE,disney,Disney+'],
-  },
-  {
-    key: 'hbo',
-    name: 'HBO',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/HBO.png`,
-    url: 'https://www.hbo.com/favicon.ico',
-    rules: ['GEOSITE,hbo,HBO'],
-  },
-  {
-    key: 'hulu',
-    name: 'Hulu',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/Hulu.png`,
-    url: 'https://auth.hulu.com/v4/web/password/authenticate',
-    rules: ['GEOSITE,hulu,Hulu'],
-  },
-  {
-    key: 'primevideo',
-    name: 'Prime Video',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/Prime_Video.png`,
-    url: 'https://m.media-amazon.com/images/G/01/digital/video/web/logo-min-remaster.png',
-    rules: ['GEOSITE,primevideo,Prime Video'],
-  },
-  {
-    key: 'youtube',
-    name: 'YouTube',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/YouTube.png`,
-    url: 'https://www.youtube.com/s/desktop/494dd881/img/favicon.ico',
-    rules: ['GEOSITE,youtube,YouTube'],
-  },
-  {
-    key: 'spotify',
-    name: 'Spotify',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/Spotify.png`,
-    url: 'https://spclient.wg.spotify.com/signup/public/v1/account',
-    rules: ['GEOSITE,spotify,Spotify'],
-  },
-  {
-    key: 'tiktok',
-    name: 'Tiktok',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/TikTok.png`,
-    url: 'https://www.tiktok.com/',
-    rules: ['GEOSITE,tiktok,Tiktok'],
-  },
-  {
-    key: 'bahamut',
-    name: '巴哈姆特',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/Bahamut.png`,
-    url: 'https://ani.gamer.com.tw/ajax/getdeviceid.php',
-    rules: ['GEOSITE,bahamut,巴哈姆特'],
-  },
-  {
-    key: 'pixiv',
-    name: 'Pixiv',
-    icon: 'https://play-lh.googleusercontent.com/8pFuLOHF62ADcN0ISUAyEueA5G8IF49mX_6Az6pQNtokNVHxIVbS1L2NM62H-k02rLM=w240-h480-rw',
-    url: 'https://www.pixiv.net/robots.txt',
-    rules: ['GEOSITE,pixiv,Pixiv'],
-  },
-  // --- AI 服务 ---
   {
     key: 'openai',
     name: '国外AI',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/ChatGPT.png`,
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/ChatGPT.png',
     url: 'https://chat.openai.com/cdn-cgi/trace',
     rules: [
       'GEOSITE,jetbrains-ai,国外AI',
@@ -623,11 +487,120 @@ const serviceConfigs = [
       'PROCESS-NAME-REGEX,(?i).*language_server_.*,国外AI',
     ],
   },
-  // --- 通讯 ---
+  {
+    key: 'youtube',
+    name: 'YouTube',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/YouTube.png',
+    url: 'https://www.youtube.com/s/desktop/494dd881/img/favicon.ico',
+    rules: ['GEOSITE,youtube,YouTube'],
+  },
+  {
+    key: 'mediaHMT',
+    name: '港澳台媒体',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/TVB.png',
+    url: 'https://viu.tv/',
+    rules: [
+      'GEOSITE,tvb,港澳台媒体',
+      'GEOSITE,hkt,港澳台媒体',
+      'GEOSITE,hkbn,港澳台媒体',
+      'GEOSITE,hkopentv,港澳台媒体',
+      'GEOSITE,hkedcity,港澳台媒体',
+      'GEOSITE,hkgolden,港澳台媒体',
+      'GEOSITE,hketgroup,港澳台媒体',
+      'RULE-SET,hk-media,港澳台媒体',
+      'RULE-SET,tw-media,港澳台媒体',
+    ],
+    providers: [
+      {
+        key: 'hk-media',
+        url: 'https://ruleset.skk.moe/Clash/non_ip/stream_hk.txt',
+        path: './ruleset/ruleset.skk.moe/stream_hk.txt',
+        format: 'text',
+        behavior: 'classical',
+      },
+      {
+        key: 'tw-media',
+        url: 'https://ruleset.skk.moe/Clash/non_ip/stream_tw.txt',
+        path: './ruleset/ruleset.skk.moe/stream_tw.txt',
+        format: 'text',
+        behavior: 'classical',
+      },
+    ],
+  },
+  {
+    key: 'biliintl',
+    name: '哔哩哔哩东南亚',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/bilibili_3.png',
+    url: 'https://www.bilibili.tv/',
+    rules: ['GEOSITE,biliintl,哔哩哔哩东南亚'],
+  },
+  {
+    key: 'bahamut',
+    name: '巴哈姆特',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Bahamut.png',
+    url: 'https://ani.gamer.com.tw/ajax/getdeviceid.php',
+    rules: ['GEOSITE,bahamut,巴哈姆特'],
+  },
+  {
+    key: 'disney',
+    name: 'Disney+',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Disney+.png',
+    url: 'https://disney.api.edge.bamgrid.com/devices',
+    rules: ['GEOSITE,disney,Disney+'],
+  },
+  {
+    key: 'netflix',
+    name: 'NETFLIX',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Netflix_Letter.png',
+    url: 'https://api.fast.com/netflix/speedtest/v2?https=true',
+    rules: ['GEOSITE,netflix,NETFLIX'],
+  },
+  {
+    key: 'tiktok',
+    name: 'Tiktok',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/TikTok.png',
+    url: 'https://www.tiktok.com/',
+    rules: ['GEOSITE,tiktok,Tiktok'],
+  },
+  {
+    key: 'spotify',
+    name: 'Spotify',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Spotify.png',
+    url: 'https://spclient.wg.spotify.com/signup/public/v1/account',
+    rules: ['GEOSITE,spotify,Spotify'],
+  },
+  {
+    key: 'pixiv',
+    name: 'Pixiv',
+    icon: 'https://play-lh.googleusercontent.com/8pFuLOHF62ADcN0ISUAyEueA5G8IF49mX_6Az6pQNtokNVHxIVbS1L2NM62H-k02rLM=w240-h480-rw',
+    url: 'https://www.pixiv.net/robots.txt',
+    rules: ['GEOSITE,pixiv,Pixiv'],
+  },
+  {
+    key: 'hbo',
+    name: 'HBO',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/HBO.png',
+    url: 'https://www.hbo.com/favicon.ico',
+    rules: ['GEOSITE,hbo,HBO'],
+  },
+  {
+    key: 'primevideo',
+    name: 'Prime Video',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Prime_Video.png',
+    url: 'https://m.media-amazon.com/images/G/01/digital/video/web/logo-min-remaster.png',
+    rules: ['GEOSITE,primevideo,Prime Video'],
+  },
+  {
+    key: 'hulu',
+    name: 'Hulu',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Hulu.png',
+    url: 'https://auth.hulu.com/v4/web/password/authenticate',
+    rules: ['GEOSITE,hulu,Hulu'],
+  },
   {
     key: 'telegram',
     name: 'Telegram',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/Telegram.png`,
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Telegram.png',
     url: 'https://www.telegram.org/img/website_icon.svg',
     rules: ['GEOIP,telegram,Telegram'],
   },
@@ -641,54 +614,70 @@ const serviceConfigs = [
   {
     key: 'line',
     name: 'Line',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/Line.png`,
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Line.png',
     url: 'https://line.me/page-data/app-data.json',
     rules: ['GEOSITE,line,Line'],
   },
-  // --- 通用服务 ---
+  {
+    key: 'games',
+    name: '游戏专用',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Game.png',
+    rules: [
+      'GEOSITE,category-games@cn,国内网站',
+      'GEOSITE,category-games,游戏专用',
+    ],
+  },
+  {
+    key: 'ads',
+    name: '广告过滤',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Advertising.png',
+    rules: [
+      'GEOSITE,category-ads-all,广告过滤',
+      'RULE-SET,adblockmihomo,广告过滤',
+    ],
+    providers: [
+      {
+        key: 'adblockmihomo',
+        url: 'https://github.com/217heidai/adblockfilters/raw/refs/heads/main/rules/adblockmihomo.mrs',
+        path: './ruleset/adblockfilters/adblockmihomo.mrs',
+        format: 'mrs',
+        behavior: 'domain',
+      },
+    ],
+    reject: true,
+  },
+  {
+    key: 'apple',
+    name: '苹果服务',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Apple_2.png',
+    url: 'https://www.apple.com/library/test/success.html',
+    rules: ['GEOSITE,apple-cn,苹果服务'],
+  },
   {
     key: 'google',
     name: '谷歌服务',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/Google_Search.png`,
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Google_Search.png',
     url: 'https://www.google.com/generate_204',
     rules: ['GEOSITE,google,谷歌服务'],
   },
   {
     key: 'github',
     name: 'Github',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/GitHub.png`,
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/GitHub.png',
     url: 'https://github.com/robots.txt',
     rules: ['GEOSITE,github,Github'],
   },
   {
-    key: 'apple',
-    name: '苹果服务',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/Apple_2.png`,
-    url: 'https://www.apple.com/library/test/success.html',
-    rules: ['GEOSITE,apple-cn,苹果服务'],
-  },
-  {
     key: 'microsoft',
     name: '微软服务',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/Microsoft.png`,
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Microsoft.png',
     url: 'https://www.msftconnecttest.com/connecttest.txt',
     rules: ['GEOSITE,microsoft@cn,国内网站', 'GEOSITE,microsoft,微软服务'],
   },
-  // --- 游戏 ---
-  {
-    key: 'games',
-    name: '游戏专用',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/Game.png`,
-    rules: [
-      'GEOSITE,category-games@cn,国内网站',
-      'GEOSITE,category-games,游戏专用',
-    ],
-  },
-  // --- 日本地区 ---
   {
     key: 'japan',
     name: '日本网站',
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/JP.png`,
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/JP.png',
     url: 'https://r.r10s.jp/com/img/home/logo/touch.png',
     rules: [
       'RULE-SET,category-bank-jp,日本网站',
@@ -697,7 +686,7 @@ const serviceConfigs = [
     providers: [
       {
         key: 'category-bank-jp',
-        url: RULE_URLS.categoryBankJp,
+        url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-bank-jp.mrs',
         path: './ruleset/MetaCubeX/category-bank-jp.mrs',
         format: 'mrs',
         behavior: 'domain',
@@ -706,14 +695,10 @@ const serviceConfigs = [
   },
 ]
 
-// --- 4. 主入口 ---
+// --- 3. 主入口 ---
 
 function main(config) {
   if (!enable) return config
-
-  // 每次调用创建全新数组/对象，避免全局累积
-  const rules = _createInitialRules()
-  const ruleProviders = _createInitialRuleProviders()
 
   const proxies = config?.proxies || []
   const proxyCount = proxies.length
@@ -726,9 +711,7 @@ function main(config) {
     throw new Error('配置文件中未找到任何代理')
   }
 
-  _log('info', `开始处理 — 本地节点: ${proxyCount}, 现有 provider: ${proxyProviderCount}`)
-
-  // 4.1 覆盖基础配置
+  // 3.1 覆盖基础配置
   config['allow-lan'] = true
   config['bind-address'] = '*'
   config['mode'] = 'rule'
@@ -749,7 +732,7 @@ function main(config) {
   config['tcp-concurrent'] = true
   config['keep-alive-interval'] = 1800
   config['find-process-mode'] = 'strict'
-  config['geodata-mode'] = true
+  config['geodata-mode'] = false
   config['geodata-loader'] = 'memconservative'
   config['geo-auto-update'] = true
   config['geo-update-interval'] = 24
@@ -773,11 +756,25 @@ function main(config) {
     'skip-src-address': skipIps,
     'skip-dst-address': skipIps,
     'force-domain': [
-      'geosite:google',
-      'geosite:category-ai-!cn',
-      'geosite:netflix',
-      'geosite:facebook',
-      'geosite:twitter',
+      '+.google.com',
+      '+.googleapis.com',
+      '+.googleusercontent.com',
+      '+.youtube.com',
+      '+.facebook.com',
+      '+.messenger.com',
+      '+.fbcdn.net',
+      'fbcdn-a.akamaihd.net',
+      '+.openai.com',
+      '+.claude.ai',
+      '+.gemini.google.com',
+      '+.meta.ai',
+      '+.perplexity.ai',
+      '+.mistral.ai',
+      '+.anthropic.com',
+      '+.poe.com',
+      '+.midjourney.com',
+      '+.cursor.sh',
+      '+.groq.com',
     ],
     'skip-domain': ['Mijia Cloud', '+.oray.com'],
   }
@@ -789,7 +786,7 @@ function main(config) {
   }
   config['tun'] = {
     enable: true,
-    stack: 'system',
+    stack: 'mixed',
     device: 'utun1999',
     'auto-route': true,
     'auto-redirect': true,
@@ -803,26 +800,20 @@ function main(config) {
     'dns-hijack': ['any:53', 'tcp://any:53'],
   }
   config['geox-url'] = {
-    geoip: `${githubProxy}${GEO_URLS.geoip}`,
-    geosite: `${githubProxy}${GEO_URLS.geosite}`,
-    mmdb: `${githubProxy}${GEO_URLS.mmdb}`,
-    asn: `${githubProxy}${GEO_URLS.asn}`,
+    geoip: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat`,
+    geosite: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat`,
+    mmdb: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.metadb`,
+    asn: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb`,
   }
 
-  // 4.2 多订阅聚合：解析 proxyProviders，仅 url 以 http 开头的条目生效
+  // 3.2 多订阅聚合：解析 proxyProviders，仅 url 以 http 开头的条目生效
   const providerKeys = []
   if (typeof subscriptions === 'object' && subscriptions !== null) {
-    const entries = Object.entries(subscriptions).filter(([key, cfg]) => {
-      if (!cfg || !cfg.url || typeof cfg.url !== 'string') {
-        _log('warn', `订阅 ${key} 缺少有效 URL，已跳过`)
-        return false
-      }
-      if (!/^https?:\/\//.test(cfg.url)) {
-        _log('warn', `订阅 ${key} URL 协议非 http/https: "${cfg.url}"，已跳过。若有自定义协议订阅请检查`)
-        return false
-      }
-      return true
-    })
+    const entries = Object.entries(subscriptions)
+      .filter(([, cfg]) => {
+        const url = cfg && cfg.url
+        return url && typeof url === 'string' && /^https?:\/\//.test(url)
+      })
 
     if (entries.length > 0) {
       config['proxy-providers'] = config['proxy-providers'] || {}
@@ -849,10 +840,6 @@ function main(config) {
 
         config['proxy-providers'][key] = provider
       })
-
-      _log('info', `生效的订阅 provider: ${providerKeys.join(', ')}`)
-    } else {
-      _log('warn', '没有有效的订阅 provider')
     }
   }
 
@@ -868,7 +855,7 @@ function main(config) {
     udp: true,
   })
 
-  // 4.3 本地代理分类 (单次遍历，含去重与过滤)
+  // 3.3 本地代理按地区分类 (单次遍历)
   const regionGroups = {}
   regionDefinitions.forEach(
     (r) =>
@@ -878,10 +865,6 @@ function main(config) {
       })
   )
   const otherProxies = []
-  const seenNodes = new Set()
-  let adFilteredCount = 0
-  let ratioFilteredCount = 0
-  let dupFilteredCount = 0
 
   for (let i = 0; i < proxyCount; i++) {
     const proxy = proxies[i]
@@ -889,26 +872,15 @@ function main(config) {
 
     // 去除机场广告/信息节点
     if (isAdInfoNode(name)) {
-      adFilteredCount++
       continue
     }
 
-    // 去除高倍率节点 (预解析倍率)
     if (excludeHighPercentage) {
-      const ratio = parseMultiplier(name)
-      if (ratio !== null && ratio > globalRatioLimit) {
-        ratioFilteredCount++
+      const match = multiplierRegex.exec(name)
+      if (match && parseFloat(match[1]) > globalRatioLimit) {
         continue
       }
     }
-
-    // 重复节点去重 (按 name + server + port)
-    const dedupKey = `${name}|${proxy.server || ''}|${proxy.port || ''}`
-    if (seenNodes.has(dedupKey)) {
-      dupFilteredCount++
-      continue
-    }
-    seenNodes.add(dedupKey)
 
     let matched = false
     for (const region of regionDefinitions) {
@@ -924,22 +896,11 @@ function main(config) {
     }
   }
 
-  if (verbose) {
-    const classifiedCount = proxyCount - adFilteredCount - ratioFilteredCount - dupFilteredCount - otherProxies.length
-    _log('debug', `节点过滤: 广告/信息 ${adFilteredCount}, 高倍率 ${ratioFilteredCount}, 重复 ${dupFilteredCount}`)
-    _log('debug', `节点分类: 地区归类 ${classifiedCount}, 其他 ${otherProxies.length}`)
-    regionDefinitions.forEach((r) => {
-      const g = regionGroups[r.name]
-      if (g.proxies.length > 0) {
-        _log('debug', `  ${r.name}: ${g.proxies.length} 个节点`)
-      }
-    })
-  }
-
-  // 4.4 构建地区策略组
+  // 3.4 构建地区策略组 — 本地节点 + provider 节点 (use + filter)
   const generatedRegionGroups = []
   const hasProviders = providerKeys.length > 0
 
+  // 构建"其他节点"排除过滤器
   const allRegionKeywords = regionDefinitions
     .map((r) => r.filter.replace('(?i)', ''))
     .join('|')
@@ -948,6 +909,7 @@ function main(config) {
     const groupData = regionGroups[r.name]
     const hasLocalNodes = groupData.proxies.length > 0
 
+    // 仅本地有节点且无 provider 时加入本地节点，有 provider 时也生成（带 use+filter）
     if (hasLocalNodes) {
       const group = {
         ...groupBaseOption,
@@ -967,13 +929,13 @@ function main(config) {
     }
   })
 
-  // "其他节点"组
+  // "其他节点"组 — 始终生成（本地无归类节点 + provider 无归类节点）
   if (otherProxies.length > 0 || hasProviders) {
     const otherGroup = {
       ...groupBaseOption,
       name: '其他节点',
       type: 'select',
-      icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/World_Map.png`,
+      icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/World_Map.png',
     }
 
     if (otherProxies.length > 0) {
@@ -992,7 +954,7 @@ function main(config) {
 
   const regionGroupNames = generatedRegionGroups.map((g) => g.name)
 
-  // 收集所有本地节点名 (用于功能分组直列)
+  // 收集所有本地节点名（用于功能分组直列）
   const allLocalProxyNames = []
   regionDefinitions.forEach((r) => {
     const groupData = regionGroups[r.name]
@@ -1002,7 +964,7 @@ function main(config) {
   })
   allLocalProxyNames.push(...otherProxies)
 
-  // 4.5 构建功能策略组 — 按 serviceConfigs 顺序 (ads 最前)
+  // 3.5 构建功能策略组 — use 引入 provider 全量节点 + proxies 列出本地节点
   const functionalGroups = []
 
   const defaultNodeGroup = {
@@ -1010,7 +972,7 @@ function main(config) {
     name: '默认节点',
     type: 'select',
     proxies: ['直连', ...regionGroupNames, ...allLocalProxyNames],
-    icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/Proxy.png`,
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png',
   }
   if (hasProviders) {
     defaultNodeGroup.use = providerKeys
@@ -1059,7 +1021,7 @@ function main(config) {
     }
   })
 
-  // 4.6 通用兜底策略组
+  // 3.6 通用兜底策略组
   rules.push(
     'GEOSITE,private,直连',
     'GEOSITE,category-public-tracker,直连',
@@ -1083,118 +1045,28 @@ function main(config) {
       name: '下载软件',
       type: 'select',
       proxies: ['直连', 'REJECT', '默认节点', '国内网站', ...allLocalProxyNames],
-      icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/Download.png`,
+      icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Download.png',
     }),
     buildFixedGroup({
       name: '其他外网',
       type: 'select',
       proxies: ['默认节点', '国内网站', ...allLocalProxyNames],
-      icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/Streaming!CN.png`,
+      icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Streaming!CN.png',
     }),
     buildFixedGroup({
       name: '国内网站',
       type: 'select',
       proxies: ['直连', '默认节点', ...allLocalProxyNames],
       url: 'https://wifi.vivo.com.cn/generate_204',
-      icon: `${RAW_BASE}/Koolson/Qure/master/IconSet/Color/StreamingCN.png`,
+      icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/StreamingCN.png',
     })
   )
 
-  // 4.7 组装最终结果 (先清理机场原始配置再赋值，确保完全替换)
-  delete config['proxy-groups']
-  delete config['rules']
-  delete config['rule-providers']
-
+  // 3.7 组装最终结果
   config['proxy-groups'] = [...functionalGroups, ...generatedRegionGroups]
+
   config['rules'] = rules
   config['rule-providers'] = ruleProviders
 
-  // 4.8 配置格式校验
-  _validateConfig(config)
-
-  _log('info', `处理完成 — 策略组: ${config['proxy-groups'].length}, 规则: ${config['rules'].length}`)
-
   return config
-}
-
-// --- 5. 配置校验 ---
-
-function _validateConfig(config) {
-  const errors = []
-
-  // 检查 proxy-groups 是否存在且为数组
-  if (!Array.isArray(config['proxy-groups'])) {
-    errors.push('proxy-groups 不是数组')
-  } else {
-    const groupNames = new Set()
-    const groupNameSet = new Set()
-
-    for (const g of config['proxy-groups']) {
-      if (!g.name || typeof g.name !== 'string') {
-        errors.push('存在无名策略组')
-        continue
-      }
-      if (groupNameSet.has(g.name)) {
-        errors.push(`重复的策略组名称: "${g.name}"`)
-      }
-      groupNameSet.add(g.name)
-      groupNames.add(g.name)
-    }
-
-    // 检查 rules 引用的策略组是否存在
-    if (Array.isArray(config['rules'])) {
-      for (const rule of config['rules']) {
-        if (typeof rule !== 'string') continue
-        const parts = rule.split(',')
-        if (parts.length >= 3) {
-          const target = parts[parts.length - 1].trim()
-          // 内置策略: 直连, REJECT, MATCH 等不需要在 proxy-groups 中
-          const builtins = new Set(['直连', 'REJECT', 'MATCH', 'REJECT-TLS', 'REJECT-DROP'])
-          if (!builtins.has(target) && !groupNames.has(target) && target !== 'no-resolve') {
-            // no-resolve 不是策略组名，跳过
-            if (!rule.includes('no-resolve') || parts[parts.length - 1].trim() !== 'no-resolve') {
-              // 如果最后一个字段不是策略组（比如是 no-resolve），检查倒数第二个
-              const realTarget = parts.length >= 4 && parts[parts.length - 1].trim() === 'no-resolve'
-                ? parts[parts.length - 2].trim()
-                : target
-              if (!builtins.has(realTarget) && !groupNames.has(realTarget) && realTarget !== 'no-resolve') {
-                errors.push(`规则引用了不存在的策略组: "${realTarget}" (规则: ${rule})`)
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // 检查 rule-providers 是否在 rules 中被引用
-    const ruleProviderNames = Object.keys(config['rule-providers'] || {})
-    const rulesText = (config['rules'] || []).join('\n')
-    for (const rpName of ruleProviderNames) {
-      if (!rulesText.includes(`RULE-SET,${rpName}`)) {
-        _log('warn', `rule-provider "${rpName}" 未被任何规则引用`)
-      }
-    }
-  }
-
-  // 检查 proxy-groups 引用的 proxy-provider 是否存在
-  const existingProviders = new Set(Object.keys(config['proxy-providers'] || {}))
-  for (const g of (config['proxy-groups'] || [])) {
-    if (Array.isArray(g.use)) {
-      for (const u of g.use) {
-        if (!existingProviders.has(u)) {
-          errors.push(`策略组 "${g.name}" 引用了不存在的 proxy-provider: "${u}"`)
-        }
-      }
-    }
-  }
-
-  if (errors.length > 0) {
-    _log('error', '配置校验失败:')
-    errors.forEach((e) => _log('error', `  - ${e}`))
-    throw new Error(`配置校验失败: ${errors.join('; ')}`)
-  }
-
-  if (verbose) {
-    _log('debug', '配置格式校验通过')
-  }
 }
