@@ -210,41 +210,43 @@ if (ruleSet === 'all') {
   });
 }
 
-// --- 规则数组 ---
+// --- 初始规则 (工厂函数，每次 main() 调用创建新数组) ---
 // PROCESS-NAME-REGEX 集中放在最前面
-const rules = [
-  'PROCESS-NAME-REGEX,(?i).*Oray.*,直连',
-  'PROCESS-NAME-REGEX,(?i).*Sunlogin.*,直连',
-  'PROCESS-NAME-REGEX,(?i).*AweSun.*,直连',
-  'PROCESS-NAME-REGEX,(?i).*NodeBaby.*,直连',
-  'PROCESS-NAME-REGEX,(?i).*Node Baby.*,直连',
-  'PROCESS-NAME-REGEX,(?i).*nblink.*,直连',
-  'PROCESS-NAME-REGEX,(?i).*owjdxb.*,直连',
-  'PROCESS-NAME-REGEX,(?i).*vpn.*,直连',
-  'PROCESS-NAME-REGEX,(?i).*vnc.*,直连',
-  'PROCESS-NAME-REGEX,(?i).*tvnserver.*,直连',
-  'PROCESS-NAME-REGEX,(?i).*节点小宝.*,直连',
-  'PROCESS-NAME-REGEX,(?i).*AnyDesk.*,直连',
-  'PROCESS-NAME-REGEX,(?i).*ToDesk.*,直连',
-  'PROCESS-NAME-REGEX,(?i).*RustDesk.*,直连',
-  'PROCESS-NAME-REGEX,(?i).*TeamViewer.*,直连',
-  'PROCESS-NAME-REGEX,(?i).*Zerotier.*,直连',
-  'PROCESS-NAME-REGEX,(?i).*Tailscaled.*,直连',
-  'PROCESS-NAME-REGEX,(?i).*phddns.*,直连',
-  'PROCESS-NAME-REGEX,(?i).*ngrok.*,直连',
-  'PROCESS-NAME-REGEX,(?i).*frpc.*,直连',
-  'PROCESS-NAME-REGEX,(?i).*frps.*,直连',
-  'PROCESS-NAME-REGEX,(?i).*natapp.*,直连',
-  'PROCESS-NAME-REGEX,(?i).*cloudflared.*,直连',
-  'PROCESS-NAME-REGEX,(?i).*xmqtunnel.*,直连',
-  'PROCESS-NAME-REGEX,(?i).*Navicat.*,直连',
-  'RULE-SET,applications,下载软件',
-  'DOMAIN-SUFFIX,iepose.com,直连',
-  'DOMAIN-SUFFIX,iepose.cn,直连',
-  'DOMAIN-SUFFIX,nblink.cc,直连',
-  'DOMAIN-SUFFIX,ionewu.com,直连',
-  'DOMAIN-SUFFIX,vicp.net,直连',
-]
+function _createInitialRules() {
+  return [
+    'PROCESS-NAME-REGEX,(?i).*Oray.*,直连',
+    'PROCESS-NAME-REGEX,(?i).*Sunlogin.*,直连',
+    'PROCESS-NAME-REGEX,(?i).*AweSun.*,直连',
+    'PROCESS-NAME-REGEX,(?i).*NodeBaby.*,直连',
+    'PROCESS-NAME-REGEX,(?i).*Node Baby.*,直连',
+    'PROCESS-NAME-REGEX,(?i).*nblink.*,直连',
+    'PROCESS-NAME-REGEX,(?i).*owjdxb.*,直连',
+    'PROCESS-NAME-REGEX,(?i).*vpn.*,直连',
+    'PROCESS-NAME-REGEX,(?i).*vnc.*,直连',
+    'PROCESS-NAME-REGEX,(?i).*tvnserver.*,直连',
+    'PROCESS-NAME-REGEX,(?i).*节点小宝.*,直连',
+    'PROCESS-NAME-REGEX,(?i).*AnyDesk.*,直连',
+    'PROCESS-NAME-REGEX,(?i).*ToDesk.*,直连',
+    'PROCESS-NAME-REGEX,(?i).*RustDesk.*,直连',
+    'PROCESS-NAME-REGEX,(?i).*TeamViewer.*,直连',
+    'PROCESS-NAME-REGEX,(?i).*Zerotier.*,直连',
+    'PROCESS-NAME-REGEX,(?i).*Tailscaled.*,直连',
+    'PROCESS-NAME-REGEX,(?i).*phddns.*,直连',
+    'PROCESS-NAME-REGEX,(?i).*ngrok.*,直连',
+    'PROCESS-NAME-REGEX,(?i).*frpc.*,直连',
+    'PROCESS-NAME-REGEX,(?i).*frps.*,直连',
+    'PROCESS-NAME-REGEX,(?i).*natapp.*,直连',
+    'PROCESS-NAME-REGEX,(?i).*cloudflared.*,直连',
+    'PROCESS-NAME-REGEX,(?i).*xmqtunnel.*,直连',
+    'PROCESS-NAME-REGEX,(?i).*Navicat.*,直连',
+    'RULE-SET,applications,下载软件',
+    'DOMAIN-SUFFIX,iepose.com,直连',
+    'DOMAIN-SUFFIX,iepose.cn,直连',
+    'DOMAIN-SUFFIX,nblink.cc,直连',
+    'DOMAIN-SUFFIX,ionewu.com,直连',
+    'DOMAIN-SUFFIX,vicp.net,直连',
+  ]
+}
 
 // 地区定义 (Icons 使用 RAW_BASE 常量)
 const allRegionDefinitions = [
@@ -391,15 +393,17 @@ const groupBaseOption = {
   hidden: false,
 }
 
-// 预定义 Rule Providers
-const ruleProviders = {
-  applications: {
-    ...ruleProviderCommon,
-    behavior: 'classical',
-    format: 'text',
-    url: RULE_URLS.applications,
-    path: './ruleset/DustinWin/applications.list',
-  },
+// 预定义 Rule Providers (工厂函数，每次 main() 调用创建新对象)
+function _createInitialRuleProviders() {
+  return {
+    applications: {
+      ...ruleProviderCommon,
+      behavior: 'classical',
+      format: 'text',
+      url: RULE_URLS.applications,
+      path: './ruleset/DustinWin/applications.list',
+    },
+  }
 }
 
 // --- 2. 倍率解析 ---
@@ -706,6 +710,10 @@ const serviceConfigs = [
 
 function main(config) {
   if (!enable) return config
+
+  // 每次调用创建全新数组/对象，避免全局累积
+  const rules = _createInitialRules()
+  const ruleProviders = _createInitialRuleProviders()
 
   const proxies = config?.proxies || []
   const proxyCount = proxies.length
@@ -1092,9 +1100,12 @@ function main(config) {
     })
   )
 
-  // 4.7 组装最终结果
-  config['proxy-groups'] = [...functionalGroups, ...generatedRegionGroups]
+  // 4.7 组装最终结果 (先清理机场原始配置再赋值，确保完全替换)
+  delete config['proxy-groups']
+  delete config['rules']
+  delete config['rule-providers']
 
+  config['proxy-groups'] = [...functionalGroups, ...generatedRegionGroups]
   config['rules'] = rules
   config['rule-providers'] = ruleProviders
 
