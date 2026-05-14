@@ -448,7 +448,7 @@ const serviceConfigs = [
   {
     key: 'apple',
     name: '苹果服务',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Apple_2.png',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Apple_1.png',
     url: 'https://www.apple.com/library/test/success.html',
     rules: ['GEOSITE,apple-cn,苹果服务'],
   },
@@ -490,7 +490,7 @@ const serviceConfigs = [
   {
     key: 'telegram',
     name: 'Telegram',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Telegram.png',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Telegram_X.png',
     url: 'https://www.telegram.org/img/website_icon.svg',
     rules: ['GEOIP,telegram,Telegram'],
   },
