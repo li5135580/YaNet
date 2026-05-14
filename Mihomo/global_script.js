@@ -215,16 +215,16 @@ const allRegionDefinitions = [
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Singapore.png',
   },
   {
-    name: 'CN中国大陆',
-    regex: /中国|🇨🇳|cn|china/i,
-    filter: '(?i)中国|🇨🇳|cn|china',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/China_Map.png',
-  },
-  {
     name: 'TW台湾省',
     regex: /台湾|台灣|🇹🇼|tw|taiwan|tai wan/i,
     filter: '(?i)台湾|台灣|🇹🇼|tw|taiwan|tai wan',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/China.png',
+  },
+  {
+    name: 'CN中国大陆',
+    regex: /中国|🇨🇳|cn|china/i,
+    filter: '(?i)中国|🇨🇳|cn|china',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/China_Map.png',
   },
   {
     name: 'GB英国',
