@@ -317,7 +317,7 @@ const dnsConfig = {
   'prefer-h3': true,
   'use-hosts': true,
   'use-system-hosts': true,
-  // 'respect-rules': true,
+  'respect-rules': true,
   'enhanced-mode': 'fake-ip',
   'fake-ip-range': '198.18.0.0/16',
   'fake-ip-filter-mode': 'whitelist',
