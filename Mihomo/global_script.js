@@ -592,25 +592,6 @@ const serviceConfigs = [
     url: 'https://www.msftconnecttest.com/connecttest.txt',
     rules: ['GEOSITE,microsoft@cn,国内网站', 'GEOSITE,microsoft,微软服务'],
   },
-  {
-    key: 'japan',
-    name: '日本网站',
-    icon: 'https://raw.githubusercontent.com/Lanlan13-14/Icon-for-webui/main/Japan.png',
-    url: 'https://r.r10s.jp/com/img/home/logo/touch.png',
-    rules: [
-      'RULE-SET,category-bank-jp,日本网站',
-      'GEOIP,jp,日本网站,no-resolve',
-    ],
-    providers: [
-      {
-        key: 'category-bank-jp',
-        url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-bank-jp.mrs',
-        path: './ruleset/MetaCubeX/category-bank-jp.mrs',
-        format: 'mrs',
-        behavior: 'domain',
-      },
-    ],
-  },
 ]
 
 // --- 3. 主入口 ---
@@ -733,7 +714,7 @@ function main(config) {
           'health-check': {
             enable: true,
             url: 'https://www.gstatic.com/generate_204',
-            interval: 300,
+            interval: 3600,
           },
         }
 
