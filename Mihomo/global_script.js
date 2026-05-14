@@ -418,6 +418,102 @@ function isAdInfoNode(name) {
 // Icons 更新为 GitHub Raw
 const serviceConfigs = [
   {
+    key: 'openai',
+    name: '国外AI',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/ChatGPT.png',
+    url: 'https://chat.openai.com/cdn-cgi/trace',
+    rules: [
+      'GEOSITE,jetbrains-ai,国外AI',
+      'GEOSITE,category-ai-!cn,国外AI',
+      'GEOSITE,category-ai-chat-!cn,国外AI',
+      // OpenAI / ChatGPT
+      'DOMAIN-SUFFIX,chatgpt.com,国外AI',
+      'DOMAIN-SUFFIX,openai.com,国外AI',
+      'DOMAIN-SUFFIX,oaistatic.com,国外AI',
+      'DOMAIN-SUFFIX,oaiusercontent.com,国外AI',
+      // Google Gemini
+      'DOMAIN-SUFFIX,gemini.google.com,国外AI',
+      'DOMAIN-SUFFIX,gemini.com,国外AI',
+      'DOMAIN-SUFFIX,generativelanguage.googleapis.com,国外AI',
+      'DOMAIN-SUFFIX,ai.google.dev,国外AI',
+      'DOMAIN-SUFFIX,aistudio.google.com,国外AI',
+      // Anthropic / Claude
+      'DOMAIN-SUFFIX,anthropic.com,国外AI',
+      'DOMAIN-SUFFIX,claude.ai,国外AI',
+      // Meta AI
+      'DOMAIN-SUFFIX,meta.ai,国外AI',
+      'DOMAIN-SUFFIX,meta.com,国外AI',
+      // Perplexity AI
+      'DOMAIN-SUFFIX,perplexity.ai,国外AI',
+      // Mistral AI
+      'DOMAIN-SUFFIX,mistral.ai,国外AI',
+      // Midjourney
+      'DOMAIN-SUFFIX,midjourney.com,国外AI',
+      // Poe by Quora
+      'DOMAIN-SUFFIX,poe.com,国外AI',
+      // Cohere
+      'DOMAIN-SUFFIX,cohere.ai,国外AI',
+      'DOMAIN-SUFFIX,cohere.com,国外AI',
+      // Character.AI
+      'DOMAIN-SUFFIX,character.ai,国外AI',
+      // Hugging Face
+      'DOMAIN-SUFFIX,huggingface.co,国外AI',
+      'DOMAIN-SUFFIX,hf.co,国外AI',
+      // Cursor
+      'DOMAIN-SUFFIX,cursor.sh,国外AI',
+      'DOMAIN-SUFFIX,cursor.com,国外AI',
+      // Groq
+      'DOMAIN-SUFFIX,groq.com,国外AI',
+      // Together AI
+      'DOMAIN-SUFFIX,together.ai,国外AI',
+      // Replicate
+      'DOMAIN-SUFFIX,replicate.com,国外AI',
+      // Stability AI
+      'DOMAIN-SUFFIX,stability.ai,国外AI',
+      // Runway
+      'DOMAIN-SUFFIX,runwayml.com,国外AI',
+      // Suno AI
+      'DOMAIN-SUFFIX,suno.ai,国外AI',
+      // You.com
+      'DOMAIN-SUFFIX,you.com,国外AI',
+      // Copilot / Microsoft AI
+      'DOMAIN-SUFFIX,copilot.microsoft.com,国外AI',
+      // Vercel AI
+      'DOMAIN-SUFFIX,v0.dev,国外AI',
+      // Process
+      'PROCESS-NAME-REGEX,(?i).*Antigravity.*,国外AI',
+      'PROCESS-NAME-REGEX,(?i).*language_server_.*,国外AI',
+    ],
+  },
+  {
+    key: 'apple',
+    name: '苹果服务',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Apple_2.png',
+    url: 'https://www.apple.com/library/test/success.html',
+    rules: ['GEOSITE,apple-cn,苹果服务'],
+  },
+  {
+    key: 'google',
+    name: '谷歌服务',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Google_Search.png',
+    url: 'https://www.google.com/generate_204',
+    rules: ['GEOSITE,google,谷歌服务'],
+  },
+  {
+    key: 'github',
+    name: 'Github',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/GitHub.png',
+    url: 'https://github.com/robots.txt',
+    rules: ['GEOSITE,github,Github'],
+  },
+  {
+    key: 'telegram',
+    name: 'Telegram',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Telegram.png',
+    url: 'https://www.telegram.org/img/website_icon.svg',
+    rules: ['GEOIP,telegram,Telegram'],
+  },
+  {
     key: 'ads',
     name: '广告过滤',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Advertising.png',
@@ -507,81 +603,6 @@ const serviceConfigs = [
     rules: ['GEOSITE,pixiv,Pixiv'],
   },
   {
-    key: 'openai',
-    name: '国外AI',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/ChatGPT.png',
-    url: 'https://chat.openai.com/cdn-cgi/trace',
-    rules: [
-      'GEOSITE,jetbrains-ai,国外AI',
-      'GEOSITE,category-ai-!cn,国外AI',
-      'GEOSITE,category-ai-chat-!cn,国外AI',
-      // OpenAI / ChatGPT
-      'DOMAIN-SUFFIX,chatgpt.com,国外AI',
-      'DOMAIN-SUFFIX,openai.com,国外AI',
-      'DOMAIN-SUFFIX,oaistatic.com,国外AI',
-      'DOMAIN-SUFFIX,oaiusercontent.com,国外AI',
-      // Google Gemini
-      'DOMAIN-SUFFIX,gemini.google.com,国外AI',
-      'DOMAIN-SUFFIX,gemini.com,国外AI',
-      'DOMAIN-SUFFIX,generativelanguage.googleapis.com,国外AI',
-      'DOMAIN-SUFFIX,ai.google.dev,国外AI',
-      'DOMAIN-SUFFIX,aistudio.google.com,国外AI',
-      // Anthropic / Claude
-      'DOMAIN-SUFFIX,anthropic.com,国外AI',
-      'DOMAIN-SUFFIX,claude.ai,国外AI',
-      // Meta AI
-      'DOMAIN-SUFFIX,meta.ai,国外AI',
-      'DOMAIN-SUFFIX,meta.com,国外AI',
-      // Perplexity AI
-      'DOMAIN-SUFFIX,perplexity.ai,国外AI',
-      // Mistral AI
-      'DOMAIN-SUFFIX,mistral.ai,国外AI',
-      // Midjourney
-      'DOMAIN-SUFFIX,midjourney.com,国外AI',
-      // Poe by Quora
-      'DOMAIN-SUFFIX,poe.com,国外AI',
-      // Cohere
-      'DOMAIN-SUFFIX,cohere.ai,国外AI',
-      'DOMAIN-SUFFIX,cohere.com,国外AI',
-      // Character.AI
-      'DOMAIN-SUFFIX,character.ai,国外AI',
-      // Hugging Face
-      'DOMAIN-SUFFIX,huggingface.co,国外AI',
-      'DOMAIN-SUFFIX,hf.co,国外AI',
-      // Cursor
-      'DOMAIN-SUFFIX,cursor.sh,国外AI',
-      'DOMAIN-SUFFIX,cursor.com,国外AI',
-      // Groq
-      'DOMAIN-SUFFIX,groq.com,国外AI',
-      // Together AI
-      'DOMAIN-SUFFIX,together.ai,国外AI',
-      // Replicate
-      'DOMAIN-SUFFIX,replicate.com,国外AI',
-      // Stability AI
-      'DOMAIN-SUFFIX,stability.ai,国外AI',
-      // Runway
-      'DOMAIN-SUFFIX,runwayml.com,国外AI',
-      // Suno AI
-      'DOMAIN-SUFFIX,suno.ai,国外AI',
-      // You.com
-      'DOMAIN-SUFFIX,you.com,国外AI',
-      // Copilot / Microsoft AI
-      'DOMAIN-SUFFIX,copilot.microsoft.com,国外AI',
-      // Vercel AI
-      'DOMAIN-SUFFIX,v0.dev,国外AI',
-      // Process
-      'PROCESS-NAME-REGEX,(?i).*Antigravity.*,国外AI',
-      'PROCESS-NAME-REGEX,(?i).*language_server_.*,国外AI',
-    ],
-  },
-  {
-    key: 'telegram',
-    name: 'Telegram',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Telegram.png',
-    url: 'https://www.telegram.org/img/website_icon.svg',
-    rules: ['GEOIP,telegram,Telegram'],
-  },
-  {
     key: 'whatsapp',
     name: 'WhatsApp',
     icon: 'https://static.whatsapp.net/rsrc.php/v3/yP/r/rYZqPCBaG70.png',
@@ -594,27 +615,6 @@ const serviceConfigs = [
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Line.png',
     url: 'https://line.me/page-data/app-data.json',
     rules: ['GEOSITE,line,Line'],
-  },
-  {
-    key: 'apple',
-    name: '苹果服务',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Apple_2.png',
-    url: 'https://www.apple.com/library/test/success.html',
-    rules: ['GEOSITE,apple-cn,苹果服务'],
-  },
-  {
-    key: 'google',
-    name: '谷歌服务',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Google_Search.png',
-    url: 'https://www.google.com/generate_204',
-    rules: ['GEOSITE,google,谷歌服务'],
-  },
-  {
-    key: 'github',
-    name: 'Github',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/GitHub.png',
-    url: 'https://github.com/robots.txt',
-    rules: ['GEOSITE,github,Github'],
   },
   {
     key: 'microsoft',
