@@ -358,7 +358,7 @@ const ruleProviderCommon = {
   interval: 86400,
 }
 const groupBaseOption = {
-  interval: 300,
+  interval: 3600,
   timeout: 3000,
   url: 'https://www.gstatic.com/generate_204',
   lazy: true,
@@ -507,30 +507,32 @@ const serviceConfigs = [
     rules: ['GEOSITE,github,Github'],
   },
   {
+    key: 'youtube',
+    name: 'YouTube',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/YouTube.png',
+    url: 'https://www.youtube.com/s/desktop/494dd881/img/favicon.ico',
+    rules: ['GEOSITE,youtube,YouTube'],
+  },
+  {
+    key: 'spotify',
+    name: 'Spotify',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Spotify.png',
+    url: 'https://spclient.wg.spotify.com/signup/public/v1/account',
+    rules: ['GEOSITE,spotify,Spotify'],
+  },
+  {
+    key: 'tiktok',
+    name: 'Tiktok',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/TikTok.png',
+    url: 'https://www.tiktok.com/',
+    rules: ['GEOSITE,tiktok,Tiktok'],
+  },
+  {
     key: 'telegram',
     name: 'Telegram',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Telegram.png',
     url: 'https://www.telegram.org/img/website_icon.svg',
     rules: ['GEOIP,telegram,Telegram'],
-  },
-  {
-    key: 'ads',
-    name: '广告过滤',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Advertising.png',
-    rules: [
-      'GEOSITE,category-ads-all,广告过滤',
-      'RULE-SET,adblockmihomo,广告过滤',
-    ],
-    providers: [
-      {
-        key: 'adblockmihomo',
-        url: 'https://github.com/217heidai/adblockfilters/raw/refs/heads/main/rules/adblockmihomo.mrs',
-        path: './ruleset/adblockfilters/adblockmihomo.mrs',
-        format: 'mrs',
-        behavior: 'domain',
-      },
-    ],
-    reject: true,
   },
   {
     key: 'netflix',
@@ -566,27 +568,6 @@ const serviceConfigs = [
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Prime_Video.png',
     url: 'https://m.media-amazon.com/images/G/01/digital/video/web/logo-min-remaster.png',
     rules: ['GEOSITE,primevideo,Prime Video'],
-  },
-  {
-    key: 'youtube',
-    name: 'YouTube',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/YouTube.png',
-    url: 'https://www.youtube.com/s/desktop/494dd881/img/favicon.ico',
-    rules: ['GEOSITE,youtube,YouTube'],
-  },
-  {
-    key: 'spotify',
-    name: 'Spotify',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Spotify.png',
-    url: 'https://spclient.wg.spotify.com/signup/public/v1/account',
-    rules: ['GEOSITE,spotify,Spotify'],
-  },
-  {
-    key: 'tiktok',
-    name: 'Tiktok',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/TikTok.png',
-    url: 'https://www.tiktok.com/',
-    rules: ['GEOSITE,tiktok,Tiktok'],
   },
   {
     key: 'bahamut',
@@ -633,23 +614,23 @@ const serviceConfigs = [
     ],
   },
   {
-    key: 'japan',
-    name: '日本网站',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/JP.png',
-    url: 'https://r.r10s.jp/com/img/home/logo/touch.png',
+    key: 'ads',
+    name: '广告过滤',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Advertising.png',
     rules: [
-      'RULE-SET,category-bank-jp,日本网站',
-      'GEOIP,jp,日本网站,no-resolve',
+      'GEOSITE,category-ads-all,广告过滤',
+      'RULE-SET,adblockmihomo,广告过滤',
     ],
     providers: [
       {
-        key: 'category-bank-jp',
-        url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-bank-jp.mrs',
-        path: './ruleset/MetaCubeX/category-bank-jp.mrs',
+        key: 'adblockmihomo',
+        url: 'https://github.com/217heidai/adblockfilters/raw/refs/heads/main/rules/adblockmihomo.mrs',
+        path: './ruleset/adblockfilters/adblockmihomo.mrs',
         format: 'mrs',
         behavior: 'domain',
       },
     ],
+    reject: true,
   },
 ]
 
