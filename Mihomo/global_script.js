@@ -159,14 +159,12 @@ let ruleOptions = {
   disney: false,
   pixiv: false,
   hbo: false,
-  tvb: false,
   hulu: false,
   primevideo: false,
   telegram: false,
   line: false,
   whatsapp: false,
   games: false,
-  japan: false,
   ads: false,
 }
 
