@@ -162,7 +162,6 @@ let ruleOptions = {
   primevideo: false,
   telegram: true,
   line: false,
-  whatsapp: false,
   games: false,
   ads: true,
 }
@@ -589,13 +588,6 @@ const serviceConfigs = [
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Telegram.png',
     url: 'https://www.telegram.org/img/website_icon.svg',
     rules: ['GEOIP,telegram,Telegram'],
-  },
-  {
-    key: 'whatsapp',
-    name: 'WhatsApp',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/WhatsApp.png',
-    url: 'https://web.whatsapp.com/data/manifest.json',
-    rules: ['GEOSITE,whatsapp,WhatsApp'],
   },
   {
     key: 'line',
