@@ -157,7 +157,6 @@ let ruleOptions = {
   netflix: false,
   tiktok: false,
   disney: false,
-  pixiv: false,
   hbo: false,
   hulu: false,
   primevideo: false,
@@ -538,7 +537,7 @@ const serviceConfigs = [
   {
     key: 'disney',
     name: 'Disney+',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Disney_Plus.png',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Disney.png',
     url: 'https://disney.api.edge.bamgrid.com/devices',
     rules: ['GEOSITE,disney,Disney+'],
   },
@@ -562,13 +561,6 @@ const serviceConfigs = [
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Spotify.png',
     url: 'https://spclient.wg.spotify.com/signup/public/v1/account',
     rules: ['GEOSITE,spotify,Spotify'],
-  },
-  {
-    key: 'pixiv',
-    name: 'Pixiv',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Pixiv.png',
-    url: 'https://www.pixiv.net/robots.txt',
-    rules: ['GEOSITE,pixiv,Pixiv'],
   },
   {
     key: 'hbo',
@@ -608,7 +600,7 @@ const serviceConfigs = [
   {
     key: 'line',
     name: 'Line',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/LINE.png',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Line.png',
     url: 'https://line.me/page-data/app-data.json',
     rules: ['GEOSITE,line,Line'],
   },
@@ -998,7 +990,7 @@ else {
       name: '其他外网',
       type: 'select',
       proxies: ['默认节点', '国内网站', ...allLocalProxyNames],
-      icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/GlobalMedia.png',
+      icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/GlobalMedia.png',
     }),
     buildFixedGroup({
       name: '国内网站',
