@@ -161,7 +161,7 @@ let ruleOptions = {
   hbo: false,
   hulu: false,
   primevideo: false,
-  telegram: false,
+  telegram: true,
   line: false,
   whatsapp: false,
   games: false,
