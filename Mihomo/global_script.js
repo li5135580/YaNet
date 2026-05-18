@@ -274,40 +274,71 @@ const dnsConfig = {
   listen: '0.0.0.0:53',
   ipv6: ipv6,
   'log-level': logLevel,
+
   'prefer-h3': true,
   'use-hosts': true,
   'use-system-hosts': true,
   'respect-rules': true,
+
   'enhanced-mode': 'fake-ip',
+
   'fake-ip-range': '198.18.0.0/16',
-  'fake-ip-filter-mode': 'whitelist',
+
+  // whitelist -> blacklist
+  'fake-ip-filter-mode': 'blacklist',
+
   'fake-ip-filter': [
-    'geosite:gfw',
-    'geosite:jetbrains-ai',
-    'geosite:category-ai-!cn',
-    'geosite:category-ai-chat-!cn',
-    'geosite:category-games-!cn',
-    'geosite:google@!cn',
-    'geosite:telegram',
-    'geosite:facebook',
-    'geosite:google',
-    'geosite:amazon',
+    '*.lan',
+    '*.local',
+    '*.market.xiaomi.com',
+    'localhost.ptlogin2.qq.com',
+    'localhost.sec.qq.com',
+    '+.msftconnecttest.com',
+    '+.msftncsi.com',
+    'router.asus.com',
+    'routerlogin.net',
+    'www.asusrouter.com',
+    'printer',
+    'nas',
+    'time.*.com',
+    'time.*.gov',
+    'time.*.edu.cn',
+    'ntp.*.com',
+    'ntp.*.cn',
+    'stun.*.*',
+    'stun.*.*.*',
+    '+.stun.*.*',
+    '+.stun.*.*.*',
+    '+.market.xiaomi.com',
+    'geosite:private',
     'geosite:category-bank-jp',
   ],
+
   nameserver: chinaDNS,
+
   'default-nameserver': defaultDNS,
+
   'direct-nameserver': directDNS,
-  // fallback: foreignDNS,
-  // 'fallback-filter': {
-  //   geoip: true,
-  //   'geoip-code': 'CN',
-  // },
+
+  // 恢复 fallback
+  fallback: foreignDNS,
+
+  'fallback-filter': {
+    geoip: true,
+    'geoip-code': 'CN',
+    geosite: ['gfw'],
+  },
+
   'proxy-server-nameserver': chinaDNS,
+
   'nameserver-policy': {
     'geosite:private': 'system',
+
     'geosite:tld-cn,cn,steam@cn,category-games@cn,microsoft@cn,apple@cn,category-game-platforms-download@cn,category-public-tracker':
       chinaDNS,
-    'geosite:gfw,jetbrains-ai,category-ai-!cn,category-ai-chat-!cn': foreignDNS,
+
+    'geosite:gfw,jetbrains-ai,category-ai-!cn,category-ai-chat-!cn':
+      foreignDNS,
   },
 }
 
@@ -339,7 +370,7 @@ const ruleProviders = {
 
 // 倍率正则预编译
 const multiplierRegex =
-  /(?<=[xX✕✖⨉倍率])([1-9]+(\.\d+)*|0{1}\.\d+)(?=[xX✕✖⨉倍率])*/i
+  /(?:倍率|[xX✕✖⨉])?\s*(\d+(?:\.\d+)?)\s*(?:倍率|[xX✕✖⨉])?/i
 
 // 机场广告/信息节点过滤
 const adInfoKeywords = [
@@ -438,6 +469,23 @@ const serviceConfigs = [
       'DOMAIN-SUFFIX,cursor.com,国外AI',
       // Groq
       'DOMAIN-SUFFIX,groq.com,国外AI',
+      // xAI / Grok
+      'DOMAIN-SUFFIX,x.ai,国外AI',
+      'DOMAIN-SUFFIX,grok.com,国外AI',
+      // OpenRouter
+      'DOMAIN-SUFFIX,openrouter.ai,国外AI',
+
+      // OpenAI API
+      'DOMAIN-SUFFIX,api.openai.com,国外AI',
+
+      // Anthropic API
+      'DOMAIN-SUFFIX,api.anthropic.com,国外AI',
+
+      // Cursor API
+      'DOMAIN-SUFFIX,cursorapi.com,国外AI',
+
+      // Google Vertex AI
+      'DOMAIN-SUFFIX,vertexai.googleapis.com,国外AI',
       // Together AI
       'DOMAIN-SUFFIX,together.ai,国外AI',
       // Replicate
@@ -616,6 +664,7 @@ function main(config) {
   config['mode'] = 'rule'
   config['ipv6'] = ipv6
   config['external-controller'] = '0.0.0.0:1906'
+  config['secret'] = 'mihomo_party_secret'
   config['mixed-port'] = 7890
   config['redir-port'] = 7891
   config['tproxy-port'] = 7892
@@ -763,7 +812,7 @@ function main(config) {
 
     if (excludeHighPercentage) {
       const match = multiplierRegex.exec(name)
-      if (match && parseFloat(match[1]) > globalRatioLimit) {
+      if (match && parseFloat(match[1] || match[0]) > globalRatioLimit) {
         continue
       }
     }
@@ -882,13 +931,31 @@ function main(config) {
       }
 
       let groupProxies
-      if (svc.reject) {
-        groupProxies = ['REJECT', '直连', '默认节点', ...allLocalProxyNames]
-      } else if (svc.key === 'bahamut') {
-        groupProxies = ['默认节点', '直连', ...allLocalProxyNames]
-      } else {
-        groupProxies = ['默认节点', ...allLocalProxyNames, '直连']
-      }
+
+// 广告过滤
+if (svc.reject) {
+  groupProxies = ['REJECT', '直连', '默认节点']
+}
+
+// 巴哈姆特
+else if (svc.key === 'bahamut') {
+  groupProxies = ['默认节点', '直连']
+}
+
+// 国外AI：保留全部节点直列
+else if (svc.key === 'openai') {
+  groupProxies = [
+    '默认节点',
+    ...allLocalProxyNames,
+    ...regionGroupNames,
+    '直连',
+  ]
+}
+
+// 其他功能组：不展开节点
+else {
+  groupProxies = ['默认节点', '直连']
+}
 
       const group = {
         ...groupBaseOption,
