@@ -388,21 +388,16 @@ const adInfoKeywords = [
   '续费',
 ]
 
+// 优化后的合并正则（注意变量名现在是 adInfoRegex，没有结尾的 es）
 const adInfoRegex = /\b(?:USE|USED|TOTAL|EXPIRE|EMAIL)\b|Panel|Channel|Author|Traffic|Reset|Expire|Renew|Support|Telegram|https?:\/\/|(?:\d+\.\d+)\s*(GB|TB|MB|KB)|\d{4}[-/]\d{2}[-/]\d{2}/i;
 
 function isAdInfoNode(name) {
   if (!name || typeof name !== 'string') return false
   if (adInfoKeywords.some((kw) => name.includes(kw))) return true
-  return adInfoRegex.test(name);
-}
-
-function isAdInfoNode(name) {
-  if (!name || typeof name !== 'string') return false
-  if (adInfoKeywords.some((kw) => name.includes(kw))) return true
-  if (adInfoRegexes.some((re) => re.test(name))) return true
+  // 这里同步修改为使用 adInfoRegex.test()
+  if (adInfoRegex.test(name)) return true 
   return false
 }
-
 // --- 2. 服务规则数据结构 ---
 // Icons 更新为 GitHub Raw
 const serviceConfigs = [
