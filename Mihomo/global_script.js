@@ -538,7 +538,7 @@ const serviceConfigs = [
   {
     key: 'netflix',
     name: 'NETFLIX',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Netflix.png',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Netflix_Letter.png',
     url: 'https://api.fast.com/netflix/speedtest/v2?https=true',
     rules: ['GEOSITE,netflix,NETFLIX'],
   },
@@ -977,7 +977,7 @@ else {
       name: '其他外网',
       type: 'select',
       proxies: ['默认节点', '国内网站', ...allLocalProxyNames],
-      icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/GlobalMedia.png',
+      icon: 'https://raw.githubusercontent.com/Koolson/IconSet/mini/GlobalMedia.png',
     }),
     buildFixedGroup({
       name: '国内网站',
