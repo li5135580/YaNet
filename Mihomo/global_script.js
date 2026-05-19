@@ -388,13 +388,13 @@ const adInfoKeywords = [
   '续费',
 ]
 
-const adInfoRegexes = [
-  /\b(?:USE|USED|TOTAL|EXPIRE|EMAIL)\b/i,
-  /Panel|Channel|Author|Traffic|Reset|Expire|Renew|Support|Telegram/i,
-  /https?:\/\//,
-  /(?:\d+\.\d+)\s*(GB|TB|MB|KB)/i,
-  /\d{4}[-/]\d{2}[-/]\d{2}/,
-]
+const adInfoRegex = /\b(?:USE|USED|TOTAL|EXPIRE|EMAIL)\b|Panel|Channel|Author|Traffic|Reset|Expire|Renew|Support|Telegram|https?:\/\/|(?:\d+\.\d+)\s*(GB|TB|MB|KB)|\d{4}[-/]\d{2}[-/]\d{2}/i;
+
+function isAdInfoNode(name) {
+  if (!name || typeof name !== 'string') return false
+  if (adInfoKeywords.some((kw) => name.includes(kw))) return true
+  return adInfoRegex.test(name);
+}
 
 function isAdInfoNode(name) {
   if (!name || typeof name !== 'string') return false
@@ -665,7 +665,7 @@ function main(config) {
   config['keep-alive-interval'] = 1800
   config['find-process-mode'] = 'strict'
   config['geodata-mode'] = true
-  config['geodata-loader'] = 'memconservative'
+  config['geodata-loader'] = 'standard'
   config['geo-auto-update'] = true
   config['geo-update-interval'] = 24
 
