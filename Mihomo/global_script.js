@@ -977,7 +977,7 @@ else {
       name: '其他外网',
       type: 'select',
       proxies: ['默认节点', '国内网站', ...allLocalProxyNames],
-      icon: 'https://raw.githubusercontent.com/Koolson/IconSet/mini/GlobalMedia.png',
+      icon: 'https://raw.githubusercontent.com/Koolson/Qure/IconSet/mini/GlobalMedia.png',
     }),
     buildFixedGroup({
       name: '国内网站',
