@@ -83,7 +83,7 @@ let {
   enable = args.enable || true,
   ruleSet = args.ruleSet || 'all', // 支持 'all' 或 'openai,youtube,ads' 这种格式
   regionSet = args.regionSet || 'all', // 匹配 regionDefinitions.name 前两个字母 (严格大小写)
-  excludeHighPercentage = args.excludeHighPercentage || true,
+  excludeHighPercentage = args.excludeHighPercentage || false,
   globalRatioLimit = args.globalRatioLimit || 2,
   skipIps = args.skipIps || _skipIps,
   defaultDNS = args.defaultDNS || _chinaIpDns,
