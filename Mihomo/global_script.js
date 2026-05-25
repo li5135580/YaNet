@@ -366,9 +366,9 @@ const ruleProviders = {
   },
 }
 
-// 倍率正则预编译
-const multiplierRegex =
-  /(?:倍率|[xX✕✖⨉])?\s*(\d+(?:\.\d+)?)\s*(?:倍率|[xX✕✖⨉])?/i
+// 倍率正则预编译 (修复了会误杀IP地址和普通数字的Bug)
+// 匹配: 1.5x, 1.5X, x1.5, 倍率1.5, 1.5倍
+const multiplierRegex = /(?:倍率[ :]*|[xX✕✖⨉])\s*(\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)\s*(?:倍率|倍|[xX✕✖⨉])/;
 
 // 机场广告/信息节点过滤
 const adInfoKeywords = [
@@ -789,10 +789,15 @@ function main(config) {
       continue
     }
 
+    // 过滤高倍率节点
     if (excludeHighPercentage) {
       const match = multiplierRegex.exec(name)
-      if (match && parseFloat(match[1] || match[0]) > globalRatioLimit) {
-        continue
+      if (match) {
+        // match[1] 是前缀匹配到的数字，match[2] 是后缀匹配到的数字
+        const ratio = parseFloat(match[1] || match[2])
+        if (!isNaN(ratio) && ratio > globalRatioLimit) {
+          continue // 超过倍率，跳过该节点
+        }
       }
     }
 
