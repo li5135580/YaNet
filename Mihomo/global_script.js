@@ -83,7 +83,7 @@ let {
   enable = args.enable || true,
   ruleSet = args.ruleSet || 'all', // 支持 'all' 或 'openai,youtube,ads' 这种格式
   regionSet = args.regionSet || 'all', // 匹配 regionDefinitions.name 前两个字母 (严格大小写)
-  excludeHighPercentage = args.excludeHighPercentage || false,
+  excludeHighPercentage = args.excludeHighPercentage || true,
   globalRatioLimit = args.globalRatioLimit || 2,
   skipIps = args.skipIps || _skipIps,
   defaultDNS = args.defaultDNS || _chinaIpDns,
@@ -190,8 +190,8 @@ const allRegionDefinitions = [
   },
   {
     name: 'US美国',
-    regex: /\b(us|usa|united states)\b|美|🇺🇸/i,
-    filter: '(?i)\\b(us|usa|united states)\\b|美|🇺🇸',
+    regex: /\b(usa|united states)\b|(?:\b|_)us(?:\b|_|\d+)|美|🇺🇸/i,
+    filter: '(?i)\\b(usa|united states)\\b|(?:\\b|_)us(?:\\b|_|\\d+)|美|🇺🇸',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_States.png',
   },
   {
@@ -368,7 +368,7 @@ const ruleProviders = {
 
 // 倍率正则预编译 (修复了会误杀IP地址和普通数字的Bug)
 // 匹配: 1.5x, 1.5X, x1.5, 倍率1.5, 1.5倍
-const multiplierRegex = /(?:倍率[ :]*|[xX✕✖⨉])\s*(\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)\s*(?:倍率|倍|[xX✕✖⨉])/;
+const multiplierRegex = /(?:倍率[ :]*|(?:^|[\s\-_\[\]()])[xX✕✖⨉])\s*(\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)\s*(?:倍率|倍|[xX✕✖⨉](?:$|[\s\-_\[\]()]))/;
 
 // 机场广告/信息节点过滤
 const adInfoKeywords = [
