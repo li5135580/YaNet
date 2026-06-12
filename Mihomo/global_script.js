@@ -600,26 +600,33 @@ const serviceConfigs = [
       'GEOSITE,category-games,游戏专用',
     ],
   },
-  {
-    key: 'ads',
-    name: '广告过滤',
-    icon: 'https://raw.githubusercontent.com/Lanlan13-14/Icon-for-webui/main/block.png',
-    rules: [
-      'GEOSITE,category-ads-all,广告过滤',
-      'RULE-SET,adblockmihomo,广告过滤',
-    ],
-    providers: [
-      {
-        key: 'adblockmihomo',
-        url: 'https://github.com/217heidai/adblockfilters/raw/refs/heads/main/rules/adblockmihomo.mrs',
-        path: './ruleset/adblockfilters/adblockmihomo.mrs',
-        format: 'mrs',
-        behavior: 'domain',
-      },
-    ],
-    reject: true,
-  },
-]
+ {
+  key: 'ads',
+  name: '广告过滤',
+  icon: 'https://raw.githubusercontent.com/Lanlan13-14/Icon-for-webui/main/block.png',
+  rules: [
+    'GEOSITE,category-ads-all,广告过滤',
+    'RULE-SET,adblockmihomo,广告过滤',
+
+    // LDPlayer / 雷电模拟器广告
+    'DOMAIN-SUFFIX,ad.ldmnq.com,广告过滤',
+    'DOMAIN-SUFFIX,ads.ldmnq.com,广告过滤',
+    'DOMAIN-SUFFIX,push.ldmnq.com,广告过滤',
+    'DOMAIN-SUFFIX,stat.ldmnq.cn,广告过滤',
+    'DOMAIN-SUFFIX,log.ldmnq.cn,广告过滤',
+    'DOMAIN-SUFFIX,mnqlog.ldmnq.com,广告过滤',
+  ],
+  providers: [
+    {
+      key: 'adblockmihomo',
+      url: 'https://github.com/217heidai/adblockfilters/raw/refs/heads/main/rules/adblockmihomo.mrs',
+      path: './ruleset/adblockfilters/adblockmihomo.mrs',
+      format: 'mrs',
+      behavior: 'domain',
+    },
+  ],
+  reject: true, // 拒绝访问广告域名
+}
 
 // --- 3. 主入口 ---
 
