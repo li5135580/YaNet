@@ -601,21 +601,21 @@ const serviceConfigs = [
     ],
   },
  {
-  key: 'ads',
-  name: '广告过滤',
-  icon: 'https://raw.githubusercontent.com/Lanlan13-14/Icon-for-webui/main/block.png',
-  rules: [
-    'GEOSITE,category-ads-all,广告过滤',
-    'RULE-SET,adblockmihomo,广告过滤',
+    key: 'ads',
+    name: '广告过滤',
+    icon: 'https://raw.githubusercontent.com/Lanlan13-14/Icon-for-webui/main/block.png',
+    rules: [
+      'GEOSITE,category-ads-all,广告过滤',
+      'RULE-SET,adblockmihomo,广告过滤',
 
-    // LDPlayer / 雷电模拟器广告
-    'DOMAIN-SUFFIX,ad.ldmnq.com,广告过滤',
-    'DOMAIN-SUFFIX,ads.ldmnq.com,广告过滤',
-    'DOMAIN-SUFFIX,push.ldmnq.com,广告过滤',
-    'DOMAIN-SUFFIX,stat.ldmnq.cn,广告过滤',
-    'DOMAIN-SUFFIX,log.ldmnq.cn,广告过滤',
-    'DOMAIN-SUFFIX,mnqlog.ldmnq.com,广告过滤',
-  ],
+      // LDPlayer / 雷电模拟器广告
+      'DOMAIN-SUFFIX,ad.ldmnq.com,广告过滤',
+      'DOMAIN-SUFFIX,ads.ldmnq.com,广告过滤',
+      'DOMAIN-SUFFIX,push.ldmnq.com,广告过滤',
+      'DOMAIN-SUFFIX,stat.ldmnq.cn,广告过滤',
+      'DOMAIN-SUFFIX,log.ldmnq.cn,广告过滤',
+      'DOMAIN-SUFFIX,mnqlog.ldmnq.com,广告过滤',
+    ],
   providers: [
     {
       key: 'adblockmihomo',
