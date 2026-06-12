@@ -1,4 +1,4 @@
-﻿/***
+/***
  * Clash Verge Rev / Mihomo Party 优化脚本
  * 原作者: dahaha-365 (YaNet)
  * Github：https://github.com/dahaha-365/YaNet
@@ -45,10 +45,9 @@ const _proxyProviders = {
 
 // DNS 配置
 const _chinaDohDns = 'https://doh.pub/dns-query;https://dns.alidns.com/dns-query'
-const _foreignDohDns =
-  'https://dns.google/dns-query;https://dns.adguard-dns.com/dns-query'
+const _foreignDohDns = 'https://dns.google/dns-query;https://dns.adguard-dns.com/dns-query'
 const _chinaIpDns = '119.29.29.29;223.5.5.5'
-const _foreignIpDns = "8.8.8.8;94.140.14.14"
+const _foreignIpDns = '8.8.8.8;94.140.14.14'
 
 /**
  * 整个脚本的总开关，在Mihomo Party使用的话，请保持为true
@@ -105,31 +104,31 @@ if (['securest', 'secure', 'default', 'fast', 'fastest'].includes(mode)) {
     case 'securest':
       defaultDNS = _foreignIpDns
       directDNS = _foreignDohDns
-      break;
+      break
     case 'secure':
       defaultDNS = _foreignIpDns
       directDNS = _chinaDohDns
       chinaDNS = _chinaDohDns
       foreignDNS = _foreignDohDns
-      break;
+      break
     case 'fast':
       defaultDNS = _chinaIpDns
       directDNS = _chinaIpDns
       chinaDNS = _chinaIpDns
       foreignDNS = _chinaDohDns
-      break;
+      break
     case 'fastest':
       defaultDNS = _chinaIpDns
       directDNS = _chinaIpDns
       chinaDNS = _chinaIpDns
-      foreignDNS = _chinaIpDns
-      break;
+      foreignDNS = _foreignIpDns
+      break
     default:
       defaultDNS = _chinaIpDns
       directDNS = _chinaIpDns
       chinaDNS = _chinaDohDns
       foreignDNS = _chinaDohDns
-      break;
+      break
   }
 }
 
@@ -167,19 +166,19 @@ let ruleOptions = {
 }
 
 if (ruleSet === 'all') {
-  Object.keys(ruleOptions).forEach(key => ruleOptions[key] = true);
+  Object.keys(ruleOptions).forEach((key) => (ruleOptions[key] = true))
 } else if (typeof ruleSet === 'string') {
-  const enabledKeys = ruleSet.split(';').map(s => s.trim());
-  enabledKeys.forEach(key => {
+  const enabledKeys = ruleSet.split(';').map((s) => s.trim())
+  enabledKeys.forEach((key) => {
     if (Object.prototype.hasOwnProperty.call(ruleOptions, key)) {
-      ruleOptions[key] = true;
+      ruleOptions[key] = true
     }
-  });
+  })
 }
 
 // 初始规则
-const rules = [
-  'PROCESS-NAME-REGEX,(?i).*cloudflared.*,直连',]
+const rules = ['PROCESS-NAME-REGEX,(?i).*cloudflared.*,直连']
+
 // 地区定义 (Icons 更新为 GitHub Raw)
 const allRegionDefinitions = [
   {
@@ -260,8 +259,8 @@ let regionDefinitions = []
 if (regionSet === 'all') {
   regionDefinitions = allRegionDefinitions
 } else {
-  const enabledRegions = regionSet.split(';').map(s => s.trim())
-  regionDefinitions = allRegionDefinitions.filter(r => {
+  const enabledRegions = regionSet.split(';').map((s) => s.trim())
+  regionDefinitions = allRegionDefinitions.filter((r) => {
     const prefix = r.name.substring(0, 2) // 获取前两个字母
     return enabledRegions.includes(prefix)
   })
@@ -335,8 +334,7 @@ const dnsConfig = {
     'geosite:tld-cn,cn,steam@cn,category-games@cn,microsoft@cn,apple@cn,category-game-platforms-download@cn,category-public-tracker':
       chinaDNS,
 
-    'geosite:gfw,jetbrains-ai,category-ai-!cn,category-ai-chat-!cn':
-      foreignDNS,
+    'geosite:gfw,jetbrains-ai,category-ai-!cn,category-ai-chat-!cn': foreignDNS,
   },
 }
 
@@ -368,7 +366,8 @@ const ruleProviders = {
 
 // 倍率正则预编译 (修复了会误杀IP地址和普通数字的Bug)
 // 匹配: 1.5x, 1.5X, x1.5, 倍率1.5, 1.5倍
-const multiplierRegex = /(?:倍率[ :]*|(?:^|[\s\-_\[\]()])[xX✕✖⨉])\s*(\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)\s*(?:倍率|倍|[xX✕✖⨉](?:$|[\s\-_\[\]()]))/;
+const multiplierRegex =
+  /(?:倍率[ :]*|(?:^|[\s\-_\[\]()])[xX✕✖⨉])\s*(\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)\s*(?:倍率|倍|[xX✕✖⨉](?:$|[\s\-_\[\]()]))/
 
 // 机场广告/信息节点过滤
 const adInfoKeywords = [
@@ -388,18 +387,18 @@ const adInfoKeywords = [
   '续费',
 ]
 
-// 优化后的合并正则（注意变量名现在是 adInfoRegex，没有结尾的 es）
-const adInfoRegex = /\b(?:USE|USED|TOTAL|EXPIRE|EMAIL)\b|Panel|Channel|Author|Traffic|Reset|Expire|Renew|Support|Telegram|https?:\/\/|(?:\d+\.\d+)\s*(GB|TB|MB|KB)|\d{4}[-/]\d{2}[-/]\d{2}/i;
+// 优化后的合并正则
+const adInfoRegex =
+  /\b(?:USE|USED|TOTAL|EXPIRE|EMAIL)\b|Panel|Channel|Author|Traffic|Reset|Expire|Renew|Support|Telegram|https?:\/\/|(?:\d+\.\d+)\s*(GB|TB|MB|KB)|\d{4}[-/]\d{2}[-/]\d{2}/i
 
 function isAdInfoNode(name) {
   if (!name || typeof name !== 'string') return false
   if (adInfoKeywords.some((kw) => name.includes(kw))) return true
-  // 这里同步修改为使用 adInfoRegex.test()
-  if (adInfoRegex.test(name)) return true 
+  if (adInfoRegex.test(name)) return true
   return false
 }
+
 // --- 2. 服务规则数据结构 ---
-// Icons 更新为 GitHub Raw
 const serviceConfigs = [
   {
     key: 'github',
@@ -467,16 +466,12 @@ const serviceConfigs = [
       'DOMAIN-SUFFIX,grok.com,国外AI',
       // OpenRouter
       'DOMAIN-SUFFIX,openrouter.ai,国外AI',
-
       // OpenAI API
       'DOMAIN-SUFFIX,api.openai.com,国外AI',
-
       // Anthropic API
       'DOMAIN-SUFFIX,api.anthropic.com,国外AI',
-
       // Cursor API
       'DOMAIN-SUFFIX,cursorapi.com,国外AI',
-
       // Google Vertex AI
       'DOMAIN-SUFFIX,vertexai.googleapis.com,国外AI',
       // Together AI
@@ -595,19 +590,15 @@ const serviceConfigs = [
     key: 'games',
     name: '游戏专用',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Game.png',
-    rules: [
-      'GEOSITE,category-games@cn,国内网站',
-      'GEOSITE,category-games,游戏专用',
-    ],
+    rules: ['GEOSITE,category-games@cn,国内网站', 'GEOSITE,category-games,游戏专用'],
   },
- {
+  {
     key: 'ads',
     name: '广告过滤',
     icon: 'https://raw.githubusercontent.com/Lanlan13-14/Icon-for-webui/main/block.png',
     rules: [
       'GEOSITE,category-ads-all,广告过滤',
       'RULE-SET,adblockmihomo,广告过滤',
-
       // LDPlayer / 雷电模拟器广告
       'DOMAIN-SUFFIX,ad.ldmnq.com,广告过滤',
       'DOMAIN-SUFFIX,ads.ldmnq.com,广告过滤',
@@ -616,29 +607,30 @@ const serviceConfigs = [
       'DOMAIN-SUFFIX,log.ldmnq.cn,广告过滤',
       'DOMAIN-SUFFIX,mnqlog.ldmnq.com,广告过滤',
     ],
-  providers: [
-    {
-      key: 'adblockmihomo',
-      url: 'https://github.com/217heidai/adblockfilters/raw/refs/heads/main/rules/adblockmihomo.mrs',
-      path: './ruleset/adblockfilters/adblockmihomo.mrs',
-      format: 'mrs',
-      behavior: 'domain',
-    },
-  ],
-  reject: true, // 拒绝访问广告域名
-}
+    providers: [
+      {
+        key: 'adblockmihomo',
+        url: 'https://github.com/217heidai/adblockfilters/raw/refs/heads/main/rules/adblockmihomo.mrs',
+        path: './ruleset/adblockfilters/adblockmihomo.mrs',
+        format: 'mrs',
+        behavior: 'domain',
+      },
+    ],
+    reject: true, // 拒绝访问广告域名
+  },
+] // 👈 修复：此处补上了此前缺失的数组闭合右中括号 ]
 
 // --- 3. 主入口 ---
 
 function main(config) {
   if (!enable) return config
 
-  const proxies = config?.proxies || []
+  // 确保 config.proxies 存在，防止运行时 push 报错
+  config.proxies = config?.proxies || []
+  const proxies = config.proxies
   const proxyCount = proxies.length
   const proxyProviderCount =
-    typeof config?.['proxy-providers'] === 'object'
-      ? Object.keys(config['proxy-providers']).length
-      : 0
+    typeof config?.['proxy-providers'] === 'object' ? Object.keys(config['proxy-providers']).length : 0
 
   if (proxyCount === 0 && proxyProviderCount === 0) {
     throw new Error('配置文件中未找到任何代理')
@@ -655,8 +647,7 @@ function main(config) {
   config['redir-port'] = 7891
   config['tproxy-port'] = 7892
   config['external-ui'] = 'ui'
-  config['external-ui-url'] =
-    `${githubProxy}https://github.com/Zephyruso/zashboard/releases/latest/download/dist.zip`
+  config['external-ui-url'] = `${githubProxy}https://github.com/Zephyruso/zashboard/releases/latest/download/dist.zip`
   config['dns'] = dnsConfig
   config['profile'] = {
     'store-selected': true,
@@ -730,11 +721,10 @@ function main(config) {
   // 3.2 多订阅聚合：解析 proxyProviders，仅 url 以 http 开头的条目生效
   const providerKeys = []
   if (typeof subscriptions === 'object' && subscriptions !== null) {
-    const entries = Object.entries(subscriptions)
-      .filter(([, cfg]) => {
-        const url = cfg && cfg.url
-        return url && typeof url === 'string' && /^https?:\/\//.test(url)
-      })
+    const entries = Object.entries(subscriptions).filter(([, cfg]) => {
+      const url = cfg && cfg.url
+      return url && typeof url === 'string' && /^https?:\/\//.test(url)
+    })
 
     if (entries.length > 0) {
       config['proxy-providers'] = config['proxy-providers'] || {}
@@ -827,9 +817,7 @@ function main(config) {
   const hasProviders = providerKeys.length > 0
 
   // 构建"其他节点"排除过滤器
-  const allRegionKeywords = regionDefinitions
-    .map((r) => r.filter.replace('(?i)', ''))
-    .join('|')
+  const allRegionKeywords = regionDefinitions.map((r) => r.filter.replace('(?i)', '')).join('|')
 
   regionDefinitions.forEach((r) => {
     const groupData = regionGroups[r.name]
@@ -921,32 +909,24 @@ function main(config) {
         })
       }
 
-      let groupProxies
+      let groupProxies // 👈 修复：统一了此段逻辑的对齐与缩进
 
-// 广告过滤
-if (svc.reject) {
-  groupProxies = ['REJECT', '直连', '默认节点']
-}
-
-// 巴哈姆特
-else if (svc.key === 'bahamut') {
-  groupProxies = ['默认节点', '直连']
-}
-
-// 国外AI：保留全部节点直列
-else if (svc.key === 'openai') {
-  groupProxies = [
-    '默认节点',
-    ...allLocalProxyNames,
-    ...regionGroupNames,
-    '直连',
-  ]
-}
-
-// 其他功能组：不展开节点
-else {
-  groupProxies = ['默认节点', '直连']
-}
+      // 广告过滤
+      if (svc.reject) {
+        groupProxies = ['REJECT', '直连', '默认节点']
+      }
+      // 巴哈姆特
+      else if (svc.key === 'bahamut') {
+        groupProxies = ['默认节点', '直连']
+      }
+      // 国外AI：保留全部节点直列
+      else if (svc.key === 'openai') {
+        groupProxies = ['默认节点', ...allLocalProxyNames, ...regionGroupNames, '直连']
+      }
+      // 其他功能组：不展开节点
+      else {
+        groupProxies = ['默认节点', '直连']
+      }
 
       const group = {
         ...groupBaseOption,
@@ -1002,7 +982,6 @@ else {
 
   // 3.7 组装最终结果
   config['proxy-groups'] = [...functionalGroups, ...generatedRegionGroups]
-
   config['rules'] = rules
   config['rule-providers'] = ruleProviders
 
