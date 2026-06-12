@@ -162,7 +162,7 @@ let ruleOptions = {
   primevideo: false,
   telegram: true,
   line: false,
-  games: false,
+  games: true,
   ads: true,
 }
 
