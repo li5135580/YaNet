@@ -460,7 +460,7 @@ const serviceConfigs = [
   {
     key: 'crypto', // 修正：采用具体域名后缀进行精准分流，彻底避开 geosite 报错
     name: '虚拟货币',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/BTC.png',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Cryptocurrency.png',
     url: 'https://www.binance.com/robots.txt',
     rules: [
       // 币安 Binance
