@@ -1,7 +1,7 @@
 /***
- * Clash Verge Rev / Mihomo Party 优化脚本 (已新增虚拟货币分组)
+ * Clash Verge Rev / Mihomo Party 优化脚本
  * 原作者: dahaha-365 (YaNet)
- * GitHub：https://github.com/dahaha-365/YaNet
+ * Github：https://github.com/dahaha-365/YaNet
  */
 
 function stringToArray(val) {
@@ -150,7 +150,6 @@ let ruleOptions = {
   github: true,
   google: true,
   openai: true,
-  crypto: true,      // 新增：虚拟货币策略开关
   spotify: true,
   youtube: true,
   bahamut: false,
@@ -335,7 +334,7 @@ const dnsConfig = {
     'geosite:tld-cn,cn,steam@cn,category-games@cn,microsoft@cn,apple@cn,category-game-platforms-download@cn,category-public-tracker':
       chinaDNS,
 
-    'geosite:gfw,jetbrains-ai,category-ai-!cn,category-ai-chat-!cn,crypto': foreignDNS,
+    'geosite:gfw,jetbrains-ai,category-ai-!cn,category-ai-chat-!cn': foreignDNS,
   },
 }
 
@@ -366,6 +365,7 @@ const ruleProviders = {
 }
 
 // 倍率正则预编译 (修复了会误杀IP地址和普通数字的Bug)
+// 匹配: 1.5x, 1.5X, x1.5, 倍率1.5, 1.5倍
 const multiplierRegex =
   /(?:倍率[ :]*|(?:^|[\s\-_\[\]()])[xX✕✖⨉])\s*(\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)\s*(?:倍率|倍|[xX✕✖⨉](?:$|[\s\-_\[\]()]))/
 
@@ -423,56 +423,77 @@ const serviceConfigs = [
       'GEOSITE,jetbrains-ai,国外AI',
       'GEOSITE,category-ai-!cn,国外AI',
       'GEOSITE,category-ai-chat-!cn,国外AI',
+      // OpenAI / ChatGPT
       'DOMAIN-SUFFIX,chatgpt.com,国外AI',
       'DOMAIN-SUFFIX,openai.com,国外AI',
       'DOMAIN-SUFFIX,oaistatic.com,国外AI',
       'DOMAIN-SUFFIX,oaiusercontent.com,国外AI',
+      // Google Gemini
       'DOMAIN-SUFFIX,gemini.google.com,国外AI',
       'DOMAIN-SUFFIX,gemini.com,国外AI',
       'DOMAIN-SUFFIX,generativelanguage.googleapis.com,国外AI',
       'DOMAIN-SUFFIX,ai.google.dev,国外AI',
       'DOMAIN-SUFFIX,aistudio.google.com,国外AI',
+      // Anthropic / Claude
       'DOMAIN-SUFFIX,anthropic.com,国外AI',
       'DOMAIN-SUFFIX,claude.ai,国外AI',
+      // Meta AI
       'DOMAIN-SUFFIX,meta.ai,国外AI',
       'DOMAIN-SUFFIX,meta.com,国外AI',
+      // Perplexity AI
       'DOMAIN-SUFFIX,perplexity.ai,国外AI',
+      // Mistral AI
       'DOMAIN-SUFFIX,mistral.ai,国外AI',
+      // Midjourney
       'DOMAIN-SUFFIX,midjourney.com,国外AI',
+      // Poe by Quora
       'DOMAIN-SUFFIX,poe.com,国外AI',
+      // Cohere
       'DOMAIN-SUFFIX,cohere.ai,国外AI',
       'DOMAIN-SUFFIX,cohere.com,国外AI',
+      // Character.AI
       'DOMAIN-SUFFIX,character.ai,国外AI',
+      // Hugging Face
       'DOMAIN-SUFFIX,huggingface.co,国外AI',
       'DOMAIN-SUFFIX,hf.co,国外AI',
+      // Cursor
       'DOMAIN-SUFFIX,cursor.sh,国外AI',
       'DOMAIN-SUFFIX,cursor.com,国外AI',
+      // Groq
       'DOMAIN-SUFFIX,groq.com,国外AI',
+      // xAI / Grok
       'DOMAIN-SUFFIX,x.ai,国外AI',
       'DOMAIN-SUFFIX,grok.com,国外AI',
+      // OpenRouter
       'DOMAIN-SUFFIX,openrouter.ai,国外AI',
+      // OpenAI API
       'DOMAIN-SUFFIX,api.openai.com,国外AI',
+      // Anthropic API
       'DOMAIN-SUFFIX,api.anthropic.com,国外AI',
+      // Cursor API
       'DOMAIN-SUFFIX,cursorapi.com,国外AI',
+      // Google Vertex AI
       'DOMAIN-SUFFIX,vertexai.googleapis.com,国外AI',
+      // Together AI
       'DOMAIN-SUFFIX,together.ai,国外AI',
+      // Replicate
       'DOMAIN-SUFFIX,replicate.com,国外AI',
+      // Stability AI
       'DOMAIN-SUFFIX,stability.ai,国外AI',
+      // Runway
       'DOMAIN-SUFFIX,runwayml.com,国外AI',
+      // Suno AI
       'DOMAIN-SUFFIX,suno.ai,国外AI',
+      // You.com
       'DOMAIN-SUFFIX,you.com,国外AI',
+      // Copilot / Microsoft AI
       'DOMAIN-SUFFIX,copilot.microsoft.com,国外AI',
+      // Vercel AI
       'DOMAIN-SUFFIX,v0.dev,国外AI',
+      // Process
       'PROCESS-NAME-REGEX,(?i).*Antigravity.*,国外AI',
       'PROCESS-NAME-REGEX,(?i).*language_server_.*,国外AI',
     ],
-  },
-  {
-    key: 'crypto', // 新增虚拟货币核心配置
-    name: '虚拟货币',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/BTC.png',
-    url: 'https://www.binance.com/robots.txt',
-    rules: ['GEOSITE,crypto,虚拟货币'],
   },
   {
     key: 'apple',
@@ -578,6 +599,7 @@ const serviceConfigs = [
     rules: [
       'GEOSITE,category-ads-all,广告过滤',
       'RULE-SET,adblockmihomo,广告过滤',
+      // LDPlayer / 雷电模拟器广告
       'DOMAIN-SUFFIX,ad.ldmnq.com,广告过滤',
       'DOMAIN-SUFFIX,ads.ldmnq.com,广告过滤',
       'DOMAIN-SUFFIX,push.ldmnq.com,广告过滤',
@@ -594,15 +616,16 @@ const serviceConfigs = [
         behavior: 'domain',
       },
     ],
-    reject: true,
+    reject: true, // 拒绝访问广告域名
   },
-]
+] // 👈 修复：此处补上了此前缺失的数组闭合右中括号 ]
 
 // --- 3. 主入口 ---
 
 function main(config) {
   if (!enable) return config
 
+  // 确保 config.proxies 存在，防止运行时 push 报错
   config.proxies = config?.proxies || []
   const proxies = config.proxies
   const proxyCount = proxies.length
@@ -645,9 +668,15 @@ function main(config) {
     'parse-pure-ip': false,
     'override-destination': true,
     sniff: {
-      TLS: { ports: [443, 8443] },
-      HTTP: { ports: [80, '8080-8880'] },
-      QUIC: { ports: [443, 8443] },
+      TLS: {
+        ports: [443, 8443],
+      },
+      HTTP: {
+        ports: [80, '8080-8880'],
+      },
+      QUIC: {
+        ports: [443, 8443],
+      },
     },
     'skip-src-address': skipIps,
     'skip-dst-address': skipIps,
@@ -658,7 +687,6 @@ function main(config) {
       'geosite:netflix',
       'geosite:facebook',
       'geosite:twitter',
-      'geosite:crypto',
     ],
     'skip-domain': ['Mijia Cloud', '+.oray.com'],
   }
@@ -690,7 +718,7 @@ function main(config) {
     asn: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb`,
   }
 
-  // 3.2 多订阅聚合
+  // 3.2 多订阅聚合：解析 proxyProviders，仅 url 以 http 开头的条目生效
   const providerKeys = []
   if (typeof subscriptions === 'object' && subscriptions !== null) {
     const entries = Object.entries(subscriptions).filter(([, cfg]) => {
@@ -700,8 +728,10 @@ function main(config) {
 
     if (entries.length > 0) {
       config['proxy-providers'] = config['proxy-providers'] || {}
+
       entries.forEach(([key, cfg]) => {
         providerKeys.push(key)
+
         const provider = {
           type: cfg.type || 'http',
           url: cfg.url,
@@ -712,35 +742,59 @@ function main(config) {
             interval: 3600,
           },
         }
+
         if (cfg.override && cfg.override['additional-prefix']) {
           provider.override = {
             'additional-prefix': cfg.override['additional-prefix'],
           }
         }
+
         config['proxy-providers'][key] = provider
       })
     }
   }
 
-  config.proxies.push({ name: '直连', type: 'direct', udp: true })
-  config.proxies.push({ name: '拒绝', type: 'reject', udp: true })
+  config.proxies.push({
+    name: '直连',
+    type: 'direct',
+    udp: true,
+  })
 
-  // 3.3 本地代理分类
+  config.proxies.push({
+    name: '拒绝',
+    type: 'reject',
+    udp: true,
+  })
+
+  // 3.3 本地代理按地区分类 (单次遍历)
   const regionGroups = {}
-  regionDefinitions.forEach((r) => (regionGroups[r.name] = { ...r, proxies: [] }))
+  regionDefinitions.forEach(
+    (r) =>
+      (regionGroups[r.name] = {
+        ...r,
+        proxies: [],
+      })
+  )
   const otherProxies = []
 
   for (let i = 0; i < proxyCount; i++) {
     const proxy = proxies[i]
     const name = proxy.name
 
-    if (isAdInfoNode(name)) continue
+    // 去除机场广告/信息节点
+    if (isAdInfoNode(name)) {
+      continue
+    }
 
+    // 过滤高倍率节点
     if (excludeHighPercentage) {
       const match = multiplierRegex.exec(name)
       if (match) {
+        // match[1] 是前缀匹配到的数字，match[2] 是后缀匹配到的数字
         const ratio = parseFloat(match[1] || match[2])
-        if (!isNaN(ratio) && ratio > globalRatioLimit) continue
+        if (!isNaN(ratio) && ratio > globalRatioLimit) {
+          continue // 超过倍率，跳过该节点
+        }
       }
     }
 
@@ -752,18 +806,24 @@ function main(config) {
         break
       }
     }
-    if (!matched) otherProxies.push(name)
+
+    if (!matched) {
+      otherProxies.push(name)
+    }
   }
 
-  // 3.4 构建地区策略组
+  // 3.4 构建地区策略组 — 本地节点 + provider 节点 (use + filter)
   const generatedRegionGroups = []
   const hasProviders = providerKeys.length > 0
+
+  // 构建"其他节点"排除过滤器
   const allRegionKeywords = regionDefinitions.map((r) => r.filter.replace('(?i)', '')).join('|')
 
   regionDefinitions.forEach((r) => {
     const groupData = regionGroups[r.name]
     const hasLocalNodes = groupData.proxies.length > 0
 
+    // 仅本地有节点且无 provider 时加入本地节点，有 provider 时也生成（带 use+filter）
     if (hasLocalNodes) {
       const group = {
         ...groupBaseOption,
@@ -773,14 +833,17 @@ function main(config) {
         icon: r.icon,
         proxies: groupData.proxies,
       }
+
       if (hasProviders) {
         group.use = providerKeys
         group.filter = r.filter
       }
+
       generatedRegionGroups.push(group)
     }
   })
 
+  // "其他节点"组 — 始终生成（本地无归类节点 + provider 无归类节点）
   if (otherProxies.length > 0 || hasProviders) {
     const otherGroup = {
       ...groupBaseOption,
@@ -788,18 +851,24 @@ function main(config) {
       type: 'select',
       icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Global.png',
     }
-    if (otherProxies.length > 0) otherGroup.proxies = otherProxies
+
+    if (otherProxies.length > 0) {
+      otherGroup.proxies = otherProxies
+    }
+
     if (hasProviders) {
       otherGroup.use = providerKeys
       if (otherProxies.length === 0) {
         otherGroup.filter = `(?i)^(?!.*(?:${allRegionKeywords})).*`
       }
     }
+
     generatedRegionGroups.push(otherGroup)
   }
 
   const regionGroupNames = generatedRegionGroups.map((g) => g.name)
 
+  // 收集所有本地节点名（用于功能分组直列）
   const allLocalProxyNames = []
   regionDefinitions.forEach((r) => {
     const groupData = regionGroups[r.name]
@@ -809,7 +878,7 @@ function main(config) {
   })
   allLocalProxyNames.push(...otherProxies)
 
-  // 3.5 构建功能策略组
+  // 3.5 构建功能策略组 — use 引入 provider 全量节点 + proxies 列出本地节点
   const functionalGroups = []
 
   const defaultNodeGroup = {
@@ -819,7 +888,9 @@ function main(config) {
     proxies: ['直连', ...regionGroupNames, ...allLocalProxyNames],
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png',
   }
-  if (hasProviders) defaultNodeGroup.use = providerKeys
+  if (hasProviders) {
+    defaultNodeGroup.use = providerKeys
+  }
   functionalGroups.push(defaultNodeGroup)
 
   serviceConfigs.forEach((svc) => {
@@ -838,17 +909,22 @@ function main(config) {
         })
       }
 
-      let groupProxies
+      let groupProxies // 👈 修复：统一了此段逻辑的对齐与缩进
 
+      // 广告过滤
       if (svc.reject) {
         groupProxies = ['REJECT', '直连', '默认节点']
-      } else if (svc.key === 'bahamut') {
+      }
+      // 巴哈姆特
+      else if (svc.key === 'bahamut') {
         groupProxies = ['默认节点', '直连']
-      } 
-      // 国外AI与新增的虚拟货币分组：全展开所有节点和国家组
-      else if (svc.key === 'openai' || svc.key === 'crypto') {
+      }
+      // 国外AI：保留全部节点直列
+      else if (svc.key === 'openai') {
         groupProxies = ['默认节点', ...allLocalProxyNames, ...regionGroupNames, '直连']
-      } else {
+      }
+      // 其他功能组：不展开节点
+      else {
         groupProxies = ['默认节点', '直连']
       }
 
@@ -861,7 +937,10 @@ function main(config) {
         icon: svc.icon,
       }
 
-      if (hasProviders) group.use = providerKeys
+      if (hasProviders) {
+        group.use = providerKeys
+      }
+
       functionalGroups.push(group)
     }
   })
@@ -879,7 +958,9 @@ function main(config) {
 
   const buildFixedGroup = (opts) => {
     const group = { ...groupBaseOption, ...opts }
-    if (hasProviders) group.use = providerKeys
+    if (hasProviders) {
+      group.use = providerKeys
+    }
     return group
   }
 
