@@ -226,7 +226,7 @@ const dnsConfig = {
   },
 }
 
-// ✅ 优化 4: 统一基础检测间隔，要求改为 300（5分钟）
+// ✅ 优化：统一基础检测间隔，要求改为 300（5分钟）
 const ruleProviderCommon = { type: 'http', format: 'yaml', interval: 86400 }
 const groupBaseOption = {
   interval: 300,        // ✅ 统一所有策略组的健康检测(测速)时间为 300 秒
@@ -275,7 +275,7 @@ const serviceConfigs = [
     rules: ['GEOSITE,microsoft@cn,国内网站', 'GEOSITE,microsoft,微软服务'],
   },
   {
-    // ✅ 优化 3: 引入开源 Rule Provider 彻底去除内置的冗长域名匹配列表，后期全自动维护
+    // ✅ 优化：引入开源 Rule Provider 彻底去除内置的冗长域名匹配列表，后期全自动维护
     key: 'openai',
     name: '国外AI',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/AI.png',
@@ -297,7 +297,7 @@ const serviceConfigs = [
     ]
   },
   {
-    // ✅ 优化 3: 同理，虚拟货币也抛弃全部手写规则，使用强大的 blackmatrix7 远端规则集
+    // ✅ 优化：同理，虚拟货币也抛弃全部手写规则，使用强大的 blackmatrix7 远端规则集
     key: 'crypto', 
     name: '虚拟货币',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Cryptocurrency.png',
@@ -549,7 +549,7 @@ function main(config) {
           'health-check': {
             enable: true,
             url: 'https://www.gstatic.com/generate_204',
-            interval: 300, // ✅ 优化 4: 订阅节点的健康检测同样修改为 300 秒
+            interval: 300, // ✅ 优化：订阅节点的健康检测同样修改为 300 秒
           },
         }
         if (cfg.override && cfg.override['additional-prefix']) {
@@ -652,11 +652,12 @@ function main(config) {
   // 3.5 构建功能策略组
   const functionalGroups = []
 
-  // ✅ 新增：主节点 策略组 (保持手动指定美国节点)
+  // ✅ 优化：将主节点从 select(手动) 改为 url-test(自动测速优选)
   const primaryGroup = {
     ...groupBaseOption,
     name: '主节点',
-    type: 'select',
+    type: 'url-test', 
+    tolerance: 50,    
     proxies: ['🇺🇸 美国 | 72.249.203 | TUIC', '🇺🇸 美国 | 72.249.203 | H2'],
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_States.png',
   }
@@ -666,12 +667,13 @@ function main(config) {
   }
   functionalGroups.push(primaryGroup)
 
-  // ✅ 新增：备用节点 策略组 (保持手动指定日本节点)
+  // ✅ 优化：将备用节点从 select(手动) 改为 url-test(自动测速优选)
   const backupLocalNodes = allLocalProxyNames.filter(name => name.includes('日本高速'))
   const backupGroup = {
     ...groupBaseOption,
     name: '备用节点',
-    type: 'select',
+    type: 'url-test', 
+    tolerance: 50,
     proxies: backupLocalNodes.length > 0 ? backupLocalNodes : ['直连'],
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Japan.png',
   }
@@ -681,7 +683,7 @@ function main(config) {
   }
   functionalGroups.push(backupGroup)
 
-  // ✅ 优化 1：引入真正的智能测速分组，对所有节点进行实时并发测速 (url-test)
+  // ✅ 优化：引入真正的智能测速分组，对所有节点进行实时并发测速 (url-test)
   const autoSelectGroup = {
     ...groupBaseOption,
     name: '自动优选',
@@ -693,9 +695,7 @@ function main(config) {
   if (hasProviders) autoSelectGroup.use = providerKeys
   functionalGroups.push(autoSelectGroup)
 
-  // ✅ 优化 1：使用 fallback 组合，实现 “智能主备与自动回切”
-  // fallback 逻辑：从左到右按 interval (现为300秒) 测试连通性。
-  // 1. 如果主节点存活，强制走主节点；2. 如果主节点死，走备用；3. 俩都死，走“自动优选”（这里会智能挑最快的可用节点）。当主节点恢复时，流量自动平滑切回。
+  // ✅ 优化：使用 fallback 组合，实现 “智能主备与自动回切”
   const defaultNodeGroup = {
     ...groupBaseOption,
     name: '默认节点',
@@ -728,20 +728,23 @@ function main(config) {
       } else if (svc.key === 'bahamut') {
         groupProxies = ['默认节点', ...regionGroupNames, '直连']
       } 
-      // ✅ 优化 2：AI、Crypto 等策略组改为只展示美国、香港、日本、新加坡全部节点
+      // ✅ 优化：AI、Crypto 等策略组保留特定地区节点并在前面加入默认节点
       else if (svc.key === 'openai' || svc.key === 'crypto') {
         const targetRegions = ['US美国', 'HK香港', 'JP日本', 'SG新加坡']
         let allowedProxies = []
         targetRegions.forEach(r => {
-          // 仅从这四个地区的本地已筛选节点中提取并合并
           if (regionGroups[r] && regionGroups[r].proxies.length > 0) {
             allowedProxies.push(...regionGroups[r].proxies)
           }
         })
-        // 移除原有的 '默认节点' 和地区组，纯净展示所有节点单体。为空时赋予 '直连' 兜底防报错。
-        groupProxies = allowedProxies.length > 0 ? allowedProxies : ['直连']
         
-        // 埋点，通知下方创建 group 时单独写入专属正则表达式
+        groupProxies = ['默认节点']
+        if (allowedProxies.length > 0) {
+          groupProxies.push(...allowedProxies)
+        } else {
+          groupProxies.push('直连')
+        }
+        
         svc._isStrictRegion = true
       } else {
         groupProxies = ['默认节点', ...regionGroupNames, '直连']
@@ -758,7 +761,7 @@ function main(config) {
 
       if (hasProviders) {
         group.use = providerKeys
-        // ✅ 优化 2 配套操作：针对外部订阅提供者（Provider），增加严格正则限制，仅拉取美港日新节点
+        // ✅ 优化配套操作：针对外部订阅提供者（Provider），增加严格正则限制，仅拉取美港日新节点
         if (svc._isStrictRegion) {
           group.filter = '(?i)港|🇭🇰|hk|hongkong|美|🇺🇸|us|usa|日本|🇯🇵|jp|japan|新加坡|🇸🇬|sg|singapore'
         }
