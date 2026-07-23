@@ -867,13 +867,23 @@ function main(config) {
       if (svc.reject) {
         groupProxies = ['REJECT', '直连', '默认节点']
       } else if (svc.key === 'bahamut') {
-        groupProxies = ['默认节点', '直连']
+        groupProxies = [
+             '默认节点',
+             ...regionGroupNames,
+             '其他节点',
+             '直连'
+        ]
       } 
       // 满足要求：国外AI和虚拟货币策略组，全展开显示所有具体节点名和地区组
       else if (svc.key === 'openai' || svc.key === 'crypto') {
         groupProxies = ['默认节点', ...allLocalProxyNames, ...regionGroupNames, '直连']
       } else {
-        groupProxies = ['默认节点', '直连']
+        groupProxies = [
+             '默认节点',
+             ...regionGroupNames,
+             '其他节点',
+             '直连'
+        ]
       }
 
       const group = {
