@@ -289,7 +289,7 @@ const serviceConfigs = [
     providers: [
       {
         key: 'ai_rules',
-        url: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/AI/AI.yaml',
+        url: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/OpenAI/OpenAI.yaml',
         path: './ruleset/blackmatrix7/ai.yaml',
         format: 'yaml',
         behavior: 'classical', // blackmatrix7 使用 classical 标准格式
@@ -308,7 +308,7 @@ const serviceConfigs = [
     providers: [
       {
         key: 'crypto_rules',
-        url: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Crypto/Crypto.yaml',
+        url: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Cryptocurrency/Cryptocurrency.yaml',
         path: './ruleset/blackmatrix7/crypto.yaml',
         format: 'yaml',
         behavior: 'classical',
