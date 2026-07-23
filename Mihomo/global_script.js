@@ -133,6 +133,7 @@ chinaDNS = stringToArray(chinaDNS)
 foreignDNS = stringToArray(foreignDNS)
 
 let ruleOptions = {
+  ads: true,            // 广告拦截放在首位
   apple: false,
   microsoft: true,
   github: true,
@@ -151,7 +152,6 @@ let ruleOptions = {
   telegram: true,
   line: false,
   games: true,
-  ads: true,
 }
 
 if (ruleSet === 'all') {
@@ -226,10 +226,9 @@ const dnsConfig = {
   },
 }
 
-// ✅ 优化：统一基础检测间隔，要求改为 300（5分钟）
 const ruleProviderCommon = { type: 'http', format: 'yaml', interval: 86400 }
 const groupBaseOption = {
-  interval: 300,        // ✅ 统一所有策略组的健康检测(测速)时间为 300 秒
+  interval: 300,        // 统一 300 秒检测间隔
   timeout: 3000,
   url: 'https://www.gstatic.com/generate_204',
   lazy: true,
@@ -259,7 +258,33 @@ function isAdInfoNode(name) {
 }
 
 // --- 2. 服务规则数据结构 ---
+// ✅ 关键修改：将 ads（广告过滤）提到首位，保证所有广告拦截规则优先被匹配，不被后方的服务类规则吞掉
 const serviceConfigs = [
+  {
+    key: 'ads',
+    name: '广告过滤',
+    icon: 'https://raw.githubusercontent.com/Lanlan13-14/Icon-for-webui/main/block.png',
+    rules: [
+      'GEOSITE,category-ads-all,广告过滤',
+      'RULE-SET,adblockmihomo,广告过滤',
+      'DOMAIN-SUFFIX,ad.ldmnq.com,广告过滤',
+      'DOMAIN-SUFFIX,ads.ldmnq.com,广告过滤',
+      'DOMAIN-SUFFIX,push.ldmnq.com,广告过滤',
+      'DOMAIN-SUFFIX,stat.ldmnq.cn,广告过滤',
+      'DOMAIN-SUFFIX,log.ldmnq.cn,广告过滤',
+      'DOMAIN-SUFFIX,mnqlog.ldmnq.com,广告过滤',
+    ],
+    providers: [
+      {
+        key: 'adblockmihomo',
+        url: 'https://github.com/217heidai/adblockfilters/raw/refs/heads/main/rules/adblockmihomo.mrs',
+        path: './ruleset/adblockfilters/adblockmihomo.mrs',
+        format: 'mrs',
+        behavior: 'domain',
+      },
+    ],
+    reject: true,
+  },
   {
     key: 'github',
     name: 'Github',
@@ -275,14 +300,13 @@ const serviceConfigs = [
     rules: ['GEOSITE,microsoft@cn,国内网站', 'GEOSITE,microsoft,微软服务'],
   },
   {
-    // ✅ 优化：引入开源 Rule Provider 彻底去除内置的冗长域名匹配列表，后期全自动维护
     key: 'openai',
     name: '国外AI',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/AI.png',
     url: 'https://chat.openai.com/cdn-cgi/trace',
     rules: [
-      'RULE-SET,ai_rules,国外AI',                 // 使用远端 Rule Provider
-      'GEOSITE,jetbrains-ai,国外AI',             // 保留 Geosite 作为兜底增强
+      'RULE-SET,ai_rules,国外AI',
+      'GEOSITE,jetbrains-ai,国外AI',
       'GEOSITE,category-ai-!cn,国外AI',
       'GEOSITE,category-ai-chat-!cn,国外AI'
     ],
@@ -290,14 +314,13 @@ const serviceConfigs = [
       {
         key: 'ai_rules',
         url: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/OpenAI/OpenAI.yaml',
-        path: './ruleset/blackmatrix7/ai.yaml',
+        path: './ruleset/blackmatrix7/openai.yaml',
         format: 'yaml',
-        behavior: 'classical', // blackmatrix7 使用 classical 标准格式
+        behavior: 'classical',
       }
     ]
   },
   {
-    // ✅ 优化：同理，虚拟货币也抛弃全部手写规则，使用强大的 blackmatrix7 远端规则集
     key: 'crypto', 
     name: '虚拟货币',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Cryptocurrency.png',
@@ -309,7 +332,7 @@ const serviceConfigs = [
       {
         key: 'crypto_rules',
         url: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Cryptocurrency/Cryptocurrency.yaml',
-        path: './ruleset/blackmatrix7/crypto.yaml',
+        path: './ruleset/blackmatrix7/cryptocurrency.yaml',
         format: 'yaml',
         behavior: 'classical',
       }
@@ -411,31 +434,6 @@ const serviceConfigs = [
     name: '游戏专用',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Game.png',
     rules: ['GEOSITE,category-games@cn,国内网站', 'GEOSITE,category-games,游戏专用'],
-  },
-  {
-    key: 'ads',
-    name: '广告过滤',
-    icon: 'https://raw.githubusercontent.com/Lanlan13-14/Icon-for-webui/main/block.png',
-    rules: [
-      'GEOSITE,category-ads-all,广告过滤',
-      'RULE-SET,adblockmihomo,广告过滤',
-      'DOMAIN-SUFFIX,ad.ldmnq.com,广告过滤',
-      'DOMAIN-SUFFIX,ads.ldmnq.com,广告过滤',
-      'DOMAIN-SUFFIX,push.ldmnq.com,广告过滤',
-      'DOMAIN-SUFFIX,stat.ldmnq.cn,广告过滤',
-      'DOMAIN-SUFFIX,log.ldmnq.cn,广告过滤',
-      'DOMAIN-SUFFIX,mnqlog.ldmnq.com,广告过滤',
-    ],
-    providers: [
-      {
-        key: 'adblockmihomo',
-        url: 'https://github.com/217heidai/adblockfilters/raw/refs/heads/main/rules/adblockmihomo.mrs',
-        path: './ruleset/adblockfilters/adblockmihomo.mrs',
-        format: 'mrs',
-        behavior: 'domain',
-      },
-    ],
-    reject: true,
   },
 ]
 
@@ -549,7 +547,7 @@ function main(config) {
           'health-check': {
             enable: true,
             url: 'https://www.gstatic.com/generate_204',
-            interval: 300, // ✅ 优化：订阅节点的健康检测同样修改为 300 秒
+            interval: 300,
           },
         }
         if (cfg.override && cfg.override['additional-prefix']) {
@@ -652,7 +650,6 @@ function main(config) {
   // 3.5 构建功能策略组
   const functionalGroups = []
 
-  // ✅ 优化：将主节点从 select(手动) 改为 url-test(自动测速优选)
   const primaryGroup = {
     ...groupBaseOption,
     name: '主节点',
@@ -667,7 +664,6 @@ function main(config) {
   }
   functionalGroups.push(primaryGroup)
 
-  // ✅ 优化：将备用节点从 select(手动) 改为 url-test(自动测速优选)
   const backupLocalNodes = allLocalProxyNames.filter(name => name.includes('日本高速'))
   const backupGroup = {
     ...groupBaseOption,
@@ -683,7 +679,6 @@ function main(config) {
   }
   functionalGroups.push(backupGroup)
 
-  // ✅ 优化：引入真正的智能测速分组，对所有节点进行实时并发测速 (url-test)
   const autoSelectGroup = {
     ...groupBaseOption,
     name: '自动优选',
@@ -695,7 +690,6 @@ function main(config) {
   if (hasProviders) autoSelectGroup.use = providerKeys
   functionalGroups.push(autoSelectGroup)
 
-  // ✅ 优化：使用 fallback 组合，实现 “智能主备与自动回切”
   const defaultNodeGroup = {
     ...groupBaseOption,
     name: '默认节点',
@@ -727,9 +721,7 @@ function main(config) {
         groupProxies = ['REJECT', '直连', '默认节点']
       } else if (svc.key === 'bahamut') {
         groupProxies = ['默认节点', ...regionGroupNames, '直连']
-      } 
-      // ✅ 优化：AI、Crypto 等策略组保留特定地区节点并在前面加入默认节点
-      else if (svc.key === 'openai' || svc.key === 'crypto') {
+      } else if (svc.key === 'openai' || svc.key === 'crypto') {
         const targetRegions = ['US美国', 'HK香港', 'JP日本', 'SG新加坡']
         let allowedProxies = []
         targetRegions.forEach(r => {
@@ -761,7 +753,6 @@ function main(config) {
 
       if (hasProviders) {
         group.use = providerKeys
-        // ✅ 优化配套操作：针对外部订阅提供者（Provider），增加严格正则限制，仅拉取美港日新节点
         if (svc._isStrictRegion) {
           group.filter = '(?i)港|🇭🇰|hk|hongkong|美|🇺🇸|us|usa|日本|🇯🇵|jp|japan|新加坡|🇸🇬|sg|singapore'
         }
