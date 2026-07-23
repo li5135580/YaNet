@@ -2,6 +2,12 @@
  * Clash Verge Rev / Mihomo Party 优化脚本 
  * 原作者: dahaha-365 (YaNet)
  * GitHub：https://github.com/dahaha-365/YaNet
+ * 
+ * 修改说明：
+ * 1. 新增 [主节点] 策略组：Fallback类型，仅包含指定的两个美国节点，30s检测，掉线自动切，恢复自动回切。
+ * 2. 新增 [备用节点] 策略组：Fallback类型，仅包含名字含"日本高速"的节点，30s检测。
+ * 3. [默认节点] 调整为 Select 类型，将 [主节点] 和 [备用节点] 作为首选选项加入。
+ * 4. 其他业务组（AI, GitHub等）保持不变，它们引用的 [默认节点] 现在会优先尝试 [主节点] 中的线路。
  */
 
 function stringToArray(val) {
@@ -754,6 +760,10 @@ function main(config) {
   regionDefinitions.forEach((r) => (regionGroups[r.name] = { ...r, proxies: [] }))
   const otherProxies = []
 
+  // --- 新增：主备节点专用收集器 ---
+  const masterProxies = [] // 主节点：指定美国
+  const backupProxies = [] // 备用节点：日本高速
+
   for (let i = 0; i < proxyCount; i++) {
     const proxy = proxies[i]
     const name = proxy.name
@@ -766,6 +776,19 @@ function main(config) {
         const ratio = parseFloat(match[1] || match[2])
         if (!isNaN(ratio) && ratio > globalRatioLimit) continue
       }
+    }
+
+    // --- 主节点筛选逻辑 ---
+    // 要求：🇺🇸 美国 | 72.249.203 | TUIC 和 🇺🇸 美国 | 72.249.203 | H2
+    if (name.includes('🇺🇸 美国 | 72.249.203 | TUIC') || name.includes('🇺🇸 美国 | 72.249.203 | H2')) {
+      masterProxies.push(name)
+      // 注意：这些节点也可能被下面的地区正则匹配到，这没关系，它们会同时出现在地区组和主节点组中
+    }
+
+    // --- 备用节点筛选逻辑 ---
+    // 要求：节点名字包含"日本高速"
+    if (name.includes('日本高速')) {
+      backupProxies.push(name)
     }
 
     let matched = false
@@ -833,56 +856,50 @@ function main(config) {
   })
   allLocalProxyNames.push(...otherProxies)
 
-  // 3.5 构建功能策略组
+  // --- 3.5 构建功能策略组 (含主备逻辑) ---
   const functionalGroups = []
 
-  // === 新增：主节点 策略组 (手动指定美国节点) ===
-  // 这里将策略组类型设为 select，以便用户手动从这两条指定线路里选择一个作为绝对主节点。
-  // 结合了直接提供节点名(支持本地节点)与正则过滤(支持外部订阅 Provider)。
-  const primaryGroup = {
+  // 1. 构建 [主节点] 组 (Fallback, 30s interval)
+  const masterGroup = {
     ...groupBaseOption,
     name: '主节点',
-    type: 'select',
-    proxies: ['🇺🇸 美国 | 72.249.203 | TUIC', '🇺🇸 美国 | 72.249.203 | H2'],
+    type: 'fallback',
+    interval: 30, // 30秒检测
+    tolerance: 50,
+    proxies: masterProxies.length > 0 ? masterProxies : ['直连'], // 如果没有匹配到节点，至少有个直连兜底防止报错，但实际应确保有节点
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_States.png',
   }
   if (hasProviders) {
-    primaryGroup.use = providerKeys
-    // 正则转义处理，防止被解析成非期待字符
-    primaryGroup.filter = '🇺🇸 美国 \\| 72\\.249\\.203 \\| (TUIC|H2)'
+     // 如果希望从订阅中动态筛选主节点，可以使用 filter，但这里要求指定具体节点名，所以直接用 proxies
+     // 如果节点来自订阅，确保它们在 config.proxies 中已经被重命名或识别
   }
-  functionalGroups.push(primaryGroup)
+  functionalGroups.push(masterGroup)
 
-  // === 新增：备用节点 策略组 (手动指定日本节点) ===
-  // 筛选出名字包含 "日本高速" 的节点
-  const backupLocalNodes = allLocalProxyNames.filter(name => name.includes('日本高速'))
+  // 2. 构建 [备用节点] 组 (Fallback, 30s interval)
   const backupGroup = {
     ...groupBaseOption,
     name: '备用节点',
-    type: 'select',
-    // 找不到本地匹配项时默认先放直连防报错
-    proxies: backupLocalNodes.length > 0 ? backupLocalNodes : ['直连'],
+    type: 'fallback',
+    interval: 30, // 30秒检测
+    tolerance: 50,
+    proxies: backupProxies.length > 0 ? backupProxies : ['直连'],
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Japan.png',
-  }
-  if (hasProviders) {
-    backupGroup.use = providerKeys
-    backupGroup.filter = '日本高速' // 从外部订阅过滤包含"日本高速"的节点
   }
   functionalGroups.push(backupGroup)
 
-  // === 修改：默认节点 (改为 fallback 自动主备切换) ===
-  // fallback 的逻辑：从前到后依次按 interval 设定的时间测试连通性，
-  // 它会一直尝试使用处于健康状态的第一个对象（即"主节点"），主节点挂了自动切"备用节点"，主节点恢复自动切回。
+  // 3. 构建 [默认节点] 组 (Select)
+  // 将 主节点 和 备用节点 放在最前面，方便自动或手动切换
   const defaultNodeGroup = {
     ...groupBaseOption,
     name: '默认节点',
-    type: 'fallback',
-    proxies: ['主节点', '备用节点'],
-    interval: 30, // 覆盖 groupBaseOption 里的默认时间，实现每 30 秒自动健康检测
+    type: 'select',
+    proxies: ['主节点', '备用节点', '直连', ...regionGroupNames, ...allLocalProxyNames],
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png',
   }
+  if (hasProviders) defaultNodeGroup.use = providerKeys
   functionalGroups.push(defaultNodeGroup)
 
+  // 4. 构建其他业务组
   serviceConfigs.forEach((svc) => {
     if (ruleOptions[svc.key]) {
       rules.push(...svc.rules)
@@ -911,9 +928,9 @@ function main(config) {
         ]
       } 
       // 满足要求：国外AI和虚拟货币策略组，全展开显示所有具体节点名和地区组
-      // 这里均首选 '默认节点'，所以会自动继承上面的主备逻辑
       else if (svc.key === 'openai' || svc.key === 'crypto') {
-        groupProxies = ['默认节点', ...allLocalProxyNames, ...regionGroupNames, '直连']
+        // 这里也加入 主节点 和 备用节点 以便直接选择
+        groupProxies = ['默认节点', '主节点', '备用节点', ...allLocalProxyNames, ...regionGroupNames, '直连']
       } else {
         groupProxies = [
             '默认节点',
