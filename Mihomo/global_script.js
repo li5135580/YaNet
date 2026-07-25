@@ -20,8 +20,6 @@ const _skipIps =
 
 /**
  * 多订阅聚合配置
- * 将 url 占位符替换为真实订阅链接即可生效，未替换的条目自动跳过
- * additional-prefix 为节点名前缀，用于标识来源
  */
 const _proxyProviders = {
   P1: {
@@ -70,7 +68,7 @@ const args =
         logLevel: 'error',
         githubProxy: 'https://ghfast.top/',
         subscriptions: _proxyProviders,
-        checkInterval: 60, // 新增：⑤ 动态测速默认间隔为 60 秒
+        checkInterval: 900, // 修改点：测速间隔改为 900 秒 (15分钟)
       }
 
 let {
@@ -89,7 +87,7 @@ let {
   logLevel = args.logLevel || 'error',
   githubProxy = args.githubProxy || 'https://ghfast.top/',
   subscriptions = args.subscriptions || _proxyProviders,
-  checkInterval = args.checkInterval || 60, // 新增：解构提取测速间隔
+  checkInterval = args.checkInterval || 900, // 提取测速间隔，默认 15 分钟
 } = args
 
 /**
@@ -200,9 +198,9 @@ const dnsConfig = {
   enable: true,
   listen: '0.0.0.0:53',
   ipv6: ipv6,
-  'independent-cache': true,  // 新增：独立缓存
-  'cache-size': 8192,         // 新增：缓存大小
-  'fallback-cache': true,     // 新增：回退缓存
+  'independent-cache': true,  // 增强：独立缓存
+  'cache-size': 8192,         // 增强：缓存大小
+  'fallback-cache': true,     // 增强：回退缓存
   'log-level': logLevel,
   'prefer-h3': true,
   'use-hosts': true,
@@ -234,13 +232,13 @@ const dnsConfig = {
 
 const ruleProviderCommon = { type: 'http', format: 'yaml', interval: 86400 }
 
-// 修改点：② Health Restore & ⑤ 故障冷却测速
+// 修改点：解决耗电量的核心配置
 const groupBaseOption = {
-  interval: checkInterval, // 修改：采用上方传入的配置（默认60秒测速）
+  interval: checkInterval, // 全局设为 15 分钟（900秒）
   timeout: 3000,
   url: 'https://www.gstatic.com/generate_204',
-  lazy: false,             // 修改：设为 false 以确保后台主动监测节点健康状况，实现节点恢复后“立即切回”
-  'max-failed-times': 3,   // 保留：连续失败3次才判定故障，相当于冷却时间机制，避免网络抖动导致频繁横跳
+  lazy: true,              // 核心修改：恢复按需测速，不使用不唤醒基带，极大省电
+  'max-failed-times': 3,   // 连续失败3次才判定故障进入冷却
   hidden: false,
 }
 
@@ -698,8 +696,8 @@ function main(config) {
   functionalGroups.push(autoSelectGroup)
 
   // 修改点：② Health Restore (自动恢复)
-  // 此处已采用了 type: 'fallback'，配合上方 groupBaseOption 修改的 lazy: false 与间隔 60s
-  // Mihomo 内核会自动在主节点失败时切到备用节点，并在主节点通过后台监测恢复后“立即切回”
+  // 此处已采用了 type: 'fallback'，且去除了强制后台唤醒参数
+  // 当主节点超时3次后，将切换到备用节点。然后等到常规周期(15分钟后且你有网络请求时)，检测到主节点恢复后再切回。
   const defaultNodeGroup = {
     ...groupBaseOption,
     name: '默认节点',
@@ -767,8 +765,8 @@ function main(config) {
       } else if (svc.key === 'bahamut') {
         groupProxies = ['默认节点', ...regionGroupNames, '直连']
       } else if (svc.key === 'openai' || svc.key === 'crypto') {
-        // 修改点确认：⑤ AI 保持独立
-        // 此处的逻辑完美契合您要求的 "默认节点 -> US -> JP -> HK -> SG" 且不走智能负载
+        // 修改点：⑤ AI 保持独立
+        // "默认节点 -> US -> JP -> HK -> SG" 且不走智能负载
         const targetRegions = ['US美国', 'HK香港', 'JP日本', 'SG新加坡']
         let allowedProxies = []
         targetRegions.forEach(r => {
