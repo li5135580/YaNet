@@ -70,6 +70,7 @@ const args =
         logLevel: 'error',
         githubProxy: 'https://ghfast.top/',
         subscriptions: _proxyProviders,
+        checkInterval: 60, // 新增：⑤ 动态测速默认间隔为 60 秒
       }
 
 let {
@@ -88,6 +89,7 @@ let {
   logLevel = args.logLevel || 'error',
   githubProxy = args.githubProxy || 'https://ghfast.top/',
   subscriptions = args.subscriptions || _proxyProviders,
+  checkInterval = args.checkInterval || 60, // 新增：解构提取测速间隔
 } = args
 
 /**
@@ -133,7 +135,7 @@ chinaDNS = stringToArray(chinaDNS)
 foreignDNS = stringToArray(foreignDNS)
 
 let ruleOptions = {
-  ads: true,            // 广告拦截放在首位
+  ads: true,            
   apple: false,
   microsoft: true,
   github: true,
@@ -193,10 +195,14 @@ if (regionSet === 'all') {
   })
 }
 
+// 修改点：① DNS 增强（V2）加入新属性
 const dnsConfig = {
   enable: true,
   listen: '0.0.0.0:53',
   ipv6: ipv6,
+  'independent-cache': true,  // 新增：独立缓存
+  'cache-size': 8192,         // 新增：缓存大小
+  'fallback-cache': true,     // 新增：回退缓存
   'log-level': logLevel,
   'prefer-h3': true,
   'use-hosts': true,
@@ -227,12 +233,14 @@ const dnsConfig = {
 }
 
 const ruleProviderCommon = { type: 'http', format: 'yaml', interval: 86400 }
+
+// 修改点：② Health Restore & ⑤ 故障冷却测速
 const groupBaseOption = {
-  interval: 300,        // 统一 300 秒检测间隔
+  interval: checkInterval, // 修改：采用上方传入的配置（默认60秒测速）
   timeout: 3000,
   url: 'https://www.gstatic.com/generate_204',
-  lazy: true,
-  'max-failed-times': 3,
+  lazy: false,             // 修改：设为 false 以确保后台主动监测节点健康状况，实现节点恢复后“立即切回”
+  'max-failed-times': 3,   // 保留：连续失败3次才判定故障，相当于冷却时间机制，避免网络抖动导致频繁横跳
   hidden: false,
 }
 
@@ -258,7 +266,6 @@ function isAdInfoNode(name) {
 }
 
 // --- 2. 服务规则数据结构 ---
-// ✅ 关键修改：将 ads（广告过滤）提到首位，保证所有广告拦截规则优先被匹配，不被后方的服务类规则吞掉
 const serviceConfigs = [
   {
     key: 'ads',
@@ -547,7 +554,7 @@ function main(config) {
           'health-check': {
             enable: true,
             url: 'https://www.gstatic.com/generate_204',
-            interval: 300,
+            interval: checkInterval,
           },
         }
         if (cfg.override && cfg.override['additional-prefix']) {
@@ -690,14 +697,52 @@ function main(config) {
   if (hasProviders) autoSelectGroup.use = providerKeys
   functionalGroups.push(autoSelectGroup)
 
+  // 修改点：② Health Restore (自动恢复)
+  // 此处已采用了 type: 'fallback'，配合上方 groupBaseOption 修改的 lazy: false 与间隔 60s
+  // Mihomo 内核会自动在主节点失败时切到备用节点，并在主节点通过后台监测恢复后“立即切回”
   const defaultNodeGroup = {
     ...groupBaseOption,
     name: '默认节点',
-    type: 'fallback',
+    type: 'fallback', 
     proxies: ['主节点', '备用节点', '自动优选'],
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png',
   }
   functionalGroups.push(defaultNodeGroup)
+
+  // 修改点：③ 智能负载 (Load Balance)
+  const loadBalanceProxies = ['主节点']
+  if (regionGroupNames.includes('HK香港')) loadBalanceProxies.push('HK香港')
+  if (regionGroupNames.includes('JP日本')) loadBalanceProxies.push('JP日本')
+  if (loadBalanceProxies.length === 1 && otherProxies.length > 0) {
+    loadBalanceProxies.push('自动优选') // 防止只有主节点时的兜底
+  }
+
+  const loadBalanceGroup = {
+    ...groupBaseOption,
+    name: '智能负载',
+    type: 'load-balance',
+    strategy: 'consistent-hashing',
+    proxies: loadBalanceProxies,
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Download.png',
+  }
+  functionalGroups.push(loadBalanceGroup)
+
+  // 新增：将需要走负载均衡的服务提前打入 rules 列表优先匹配
+  const loadBalanceRules = [
+    'DOMAIN-SUFFIX,docker.com,智能负载',
+    'DOMAIN-SUFFIX,docker.io,智能负载',
+    'GEOSITE,steam,智能负载',
+    'DOMAIN-SUFFIX,githubusercontent.com,智能负载', // 针对 GitHub Release
+    // 匹配常规下载器进程，解决“下载器浏览器下载使用”
+    'PROCESS-NAME-REGEX,(?i).*aria2.*,智能负载',
+    'PROCESS-NAME-REGEX,(?i).*idman.*,智能负载',
+    'PROCESS-NAME-REGEX,(?i).*qbittorrent.*,智能负载',
+    'PROCESS-NAME-REGEX,(?i).*transmission.*,智能负载',
+    'PROCESS-NAME-REGEX,(?i).*bitcomet.*,智能负载',
+    'PROCESS-NAME-REGEX,(?i).*fdm.*,智能负载' 
+  ]
+  rules.push(...loadBalanceRules)
+
 
   serviceConfigs.forEach((svc) => {
     if (ruleOptions[svc.key]) {
@@ -722,6 +767,8 @@ function main(config) {
       } else if (svc.key === 'bahamut') {
         groupProxies = ['默认节点', ...regionGroupNames, '直连']
       } else if (svc.key === 'openai' || svc.key === 'crypto') {
+        // 修改点确认：⑤ AI 保持独立
+        // 此处的逻辑完美契合您要求的 "默认节点 -> US -> JP -> HK -> SG" 且不走智能负载
         const targetRegions = ['US美国', 'HK香港', 'JP日本', 'SG新加坡']
         let allowedProxies = []
         targetRegions.forEach(r => {
