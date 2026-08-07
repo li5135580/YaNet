@@ -1,6 +1,6 @@
 /***
  * Clash Verge Rev / Mihomo Party 优化脚本 
- * 优化点：严格参数配置 / 安全收口 / 自建主节点 / 日新备用节点(排除专线) / 极简分组
+ * 优化点：严格参数配置 / 安全收口 / 自建主节点 / 日新备用节点(排除专线) / 极简分组 / AI节点重构
  */
 
 function stringToArray(val) {
@@ -723,7 +723,8 @@ function main(config) {
       } else if (svc.key === 'bahamut') {
         groupProxies = ['默认节点', ...regionGroupNames, '直连']
       } else if (svc.key === 'openai' || svc.key === 'crypto') {
-        groupProxies = ['备用节点', '主节点', '直连']
+        // AI 规则指定出口挂靠到默认节点和备用节点，保留完整手动控制权
+        groupProxies = ['默认节点', '备用节点', '主节点', '直连']
         svc._isStrictRegion = false
       } else {
         groupProxies = ['默认节点', ...regionGroupNames, '直连']
