@@ -1,6 +1,6 @@
 /***
  * Clash Verge Rev / Mihomo Party 优化脚本 
- * 优化点：严格参数配置 / 安全收口 / 自建主节点 / 日新备用节点(排除专线) / 极简分组 / AI节点重构
+ * 优化点：严格参数配置 / 安全收口 / 自建主节点 / 日新备用节点(排除专线) / AI节点重构
  */
 
 function stringToArray(val) {
@@ -12,7 +12,9 @@ function stringToArray(val) {
     .filter((item) => item.length > 0)
 }
 
-// --- 1. 静态配置区域 ---
+// ==========================================
+// ⚙️ 1. 静态与核心配置区域 (请在此处修改参数)
+// ==========================================
 
 const _skipIps =
   '10.0.0.0/8;100.64.0.0/10;127.0.0.0/8;169.254.0.0/16;172.16.0.0/12;192.168.0.0/16;198.18.0.0/16;FC00::/7;FE80::/10;::1/128'
@@ -21,22 +23,8 @@ const _skipIps =
  * 多订阅聚合配置
  */
 const _proxyProviders = {
-  P1: {
-    type: 'http',
-    url: '聚合订阅链接1',
-    interval: 86400,
-    override: {
-      'additional-prefix': 'P1 | ',
-    },
-  },
-  P2: {
-    type: 'http',
-    url: '聚合订阅链接2',
-    interval: 86400,
-    override: {
-      'additional-prefix': 'P2 | ',
-    },
-  },
+  P1: { type: 'http', url: '聚合订阅链接1', interval: 86400, override: { 'additional-prefix': 'P1 | ' } },
+  P2: { type: 'http', url: '聚合订阅链接2', interval: 86400, override: { 'additional-prefix': 'P2 | ' } },
 }
 
 // DNS 配置
@@ -46,7 +34,7 @@ const _chinaIpDns = '119.29.29.29;223.5.5.5'
 const _foreignIpDns = '8.8.8.8;94.140.14.14'
 
 /**
- * 整个脚本的总开关
+ * 整个脚本的总开关与核心变量
  */
 const args =
   typeof $arguments !== 'undefined'
@@ -67,7 +55,12 @@ const args =
         logLevel: 'error',
         githubProxy: 'https://ghfast.top/',
         subscriptions: _proxyProviders,
-        checkInterval: 900,
+        
+        // 🚀 【核心性能与耗电配置】 🚀
+        // 电脑端无缝切换体验建议：checkInterval = 300, lazy = false
+        // 移动端省电建议：checkInterval = 900, lazy = true
+        checkInterval: 300, // 全局节点测速间隔 (单位：秒)
+        lazy: false,        // 是否开启按需测速 (false: 后台持续测速保持热启动; true: 需要时才唤醒测速)
       }
 
 // 使用 ?? 解决 false 被吞的基础逻辑 bug
@@ -86,7 +79,8 @@ let ipv6 = args.ipv6 ?? false;
 let logLevel = args.logLevel ?? 'error';
 let githubProxy = args.githubProxy ?? 'https://ghfast.top/';
 let subscriptions = args.subscriptions ?? _proxyProviders;
-let checkInterval = args.checkInterval ?? 900;
+let checkInterval = args.checkInterval ?? 300; // 提取测速间隔
+let lazy = args.lazy ?? false;                 // 提取懒测速开关
 
 /**
  * 模式配置
@@ -94,33 +88,15 @@ let checkInterval = args.checkInterval ?? 900;
 if (['securest', 'secure', 'default', 'fast', 'fastest'].includes(mode)) {
   switch (mode) {
     case 'securest':
-      defaultDNS = _foreignIpDns
-      directDNS = _foreignDohDns
-      break
+      defaultDNS = _foreignIpDns; directDNS = _foreignDohDns; break;
     case 'secure':
-      defaultDNS = _foreignIpDns
-      directDNS = _chinaDohDns
-      chinaDNS = _chinaDohDns
-      foreignDNS = _foreignDohDns
-      break
+      defaultDNS = _foreignIpDns; directDNS = _chinaDohDns; chinaDNS = _chinaDohDns; foreignDNS = _foreignDohDns; break;
     case 'fast':
-      defaultDNS = _chinaIpDns
-      directDNS = _chinaIpDns
-      chinaDNS = _chinaIpDns
-      foreignDNS = _chinaDohDns
-      break
+      defaultDNS = _chinaIpDns; directDNS = _chinaIpDns; chinaDNS = _chinaIpDns; foreignDNS = _chinaDohDns; break;
     case 'fastest':
-      defaultDNS = _chinaIpDns
-      directDNS = _chinaIpDns
-      chinaDNS = _chinaIpDns
-      foreignDNS = _foreignIpDns
-      break
+      defaultDNS = _chinaIpDns; directDNS = _chinaIpDns; chinaDNS = _chinaIpDns; foreignDNS = _foreignIpDns; break;
     default:
-      defaultDNS = _chinaIpDns
-      directDNS = _chinaIpDns
-      chinaDNS = _chinaDohDns
-      foreignDNS = _chinaDohDns
-      break
+      defaultDNS = _chinaIpDns; directDNS = _chinaIpDns; chinaDNS = _chinaDohDns; foreignDNS = _chinaDohDns; break;
   }
 }
 
@@ -131,35 +107,17 @@ chinaDNS = stringToArray(chinaDNS)
 foreignDNS = stringToArray(foreignDNS)
 
 let ruleOptions = {
-  ads: true,            
-  apple: false,
-  microsoft: true,
-  github: true,
-  google: true,
-  openai: true,
-  crypto: true,
-  spotify: true,
-  youtube: true,
-  bahamut: false,
-  netflix: false,
-  tiktok: false,
-  disney: false,
-  hbo: false,
-  hulu: false,
-  primevideo: false,
-  telegram: true,
-  line: false,
-  games: true,
+  ads: true, apple: false, microsoft: true, github: true, google: true,
+  openai: true, crypto: true, spotify: true, youtube: true, bahamut: false,
+  netflix: false, tiktok: false, disney: false, hbo: false, hulu: false,
+  primevideo: false, telegram: true, line: false, games: true,
 }
 
 if (ruleSet === 'all') {
   Object.keys(ruleOptions).forEach((key) => (ruleOptions[key] = true))
 } else if (typeof ruleSet === 'string') {
-  const enabledKeys = ruleSet.split(';').map((s) => s.trim())
-  enabledKeys.forEach((key) => {
-    if (Object.prototype.hasOwnProperty.call(ruleOptions, key)) {
-      ruleOptions[key] = true
-    }
+  ruleSet.split(';').map((s) => s.trim()).forEach((key) => {
+    if (Object.prototype.hasOwnProperty.call(ruleOptions, key)) ruleOptions[key] = true
   })
 }
 
@@ -185,10 +143,7 @@ if (regionSet === 'all') {
   regionDefinitions = allRegionDefinitions
 } else {
   const enabledRegions = regionSet.split(';').map((s) => s.trim())
-  regionDefinitions = allRegionDefinitions.filter((r) => {
-    const prefix = r.name.substring(0, 2)
-    return enabledRegions.includes(prefix)
-  })
+  regionDefinitions = allRegionDefinitions.filter((r) => enabledRegions.includes(r.name.substring(0, 2)))
 }
 
 const dnsConfig = {
@@ -229,11 +184,12 @@ const dnsConfig = {
 
 const ruleProviderCommon = { type: 'http', format: 'yaml', interval: 86400 }
 
+// 动态引用上方的测速变量
 const groupBaseOption = {
   interval: checkInterval,
   timeout: 3000,
   url: 'https://www.gstatic.com/generate_204',
-  lazy: true,
+  lazy: lazy,
   'max-failed-times': 3,
   hidden: false,
 }
@@ -276,166 +232,42 @@ const serviceConfigs = [
       'DOMAIN-SUFFIX,mnqlog.ldmnq.com,广告过滤',
     ],
     providers: [
-      {
-        key: 'adblockmihomo',
-        url: 'https://github.com/217heidai/adblockfilters/raw/refs/heads/main/rules/adblockmihomo.mrs',
-        path: './ruleset/adblockfilters/adblockmihomo.mrs',
-        format: 'mrs',
-        behavior: 'domain',
-      },
+      { key: 'adblockmihomo', url: 'https://github.com/217heidai/adblockfilters/raw/refs/heads/main/rules/adblockmihomo.mrs', path: './ruleset/adblockfilters/adblockmihomo.mrs', format: 'mrs', behavior: 'domain' },
     ],
     reject: true,
   },
-  {
-    key: 'github',
-    name: 'Github',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/GitHub.png',
-    url: 'https://github.com/robots.txt',
-    rules: ['GEOSITE,github,Github'],
-  },
-  {
-    key: 'microsoft',
-    name: '微软服务',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Microsoft.png',
-    url: 'https://www.msftconnecttest.com/connecttest.txt',
-    rules: ['GEOSITE,microsoft@cn,国内网站', 'GEOSITE,microsoft,微软服务'],
-  },
+  { key: 'github', name: 'Github', icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/GitHub.png', url: 'https://github.com/robots.txt', rules: ['GEOSITE,github,Github'] },
+  { key: 'microsoft', name: '微软服务', icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Microsoft.png', url: 'https://www.msftconnecttest.com/connecttest.txt', rules: ['GEOSITE,microsoft@cn,国内网站', 'GEOSITE,microsoft,微软服务'] },
   {
     key: 'openai',
     name: '国外AI',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/AI.png',
     url: 'https://chat.openai.com/cdn-cgi/trace',
-    rules: [
-      'RULE-SET,ai_rules,国外AI',
-      'GEOSITE,jetbrains-ai,国外AI',
-      'GEOSITE,category-ai-!cn,国外AI',
-      'GEOSITE,category-ai-chat-!cn,国外AI'
-    ],
-    providers: [
-      {
-        key: 'ai_rules',
-        url: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/OpenAI/OpenAI.yaml',
-        path: './ruleset/blackmatrix7/openai.yaml',
-        format: 'yaml',
-        behavior: 'classical',
-      }
-    ]
+    rules: ['RULE-SET,ai_rules,国外AI', 'GEOSITE,jetbrains-ai,国外AI', 'GEOSITE,category-ai-!cn,国外AI', 'GEOSITE,category-ai-chat-!cn,国外AI'],
+    providers: [{ key: 'ai_rules', url: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/OpenAI/OpenAI.yaml', path: './ruleset/blackmatrix7/openai.yaml', format: 'yaml', behavior: 'classical' }]
   },
   {
     key: 'crypto', 
     name: '虚拟货币',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Cryptocurrency.png',
     url: 'https://www.binance.com/robots.txt',
-    rules: [
-      'RULE-SET,crypto_rules,虚拟货币'
-    ],
-    providers: [
-      {
-        key: 'crypto_rules',
-        url: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Cryptocurrency/Cryptocurrency.yaml',
-        path: './ruleset/blackmatrix7/cryptocurrency.yaml',
-        format: 'yaml',
-        behavior: 'classical',
-      }
-    ]
+    rules: ['RULE-SET,crypto_rules,虚拟货币'],
+    providers: [{ key: 'crypto_rules', url: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Cryptocurrency/Cryptocurrency.yaml', path: './ruleset/blackmatrix7/cryptocurrency.yaml', format: 'yaml', behavior: 'classical' }]
   },
-  {
-    key: 'apple',
-    name: '苹果服务',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Apple.png',
-    url: 'https://www.apple.com/library/test/success.html',
-    rules: ['GEOSITE,apple-cn,苹果服务'],
-  },
-  {
-    key: 'google',
-    name: '谷歌服务',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Google_Search.png',
-    url: 'https://www.google.com/generate_204',
-    rules: ['GEOSITE,google,谷歌服务'],
-  },
-  {
-    key: 'youtube',
-    name: 'YouTube',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/YouTube.png',
-    url: 'https://www.youtube.com/s/desktop/494dd881/img/favicon.ico',
-    rules: ['GEOSITE,youtube,YouTube'],
-  },
-  {
-    key: 'bahamut',
-    name: '巴哈姆特',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Bahamut.png',
-    url: 'https://ani.gamer.com.tw/ajax/getdeviceid.php',
-    rules: ['GEOSITE,bahamut,巴哈姆特'],
-  },
-  {
-    key: 'disney',
-    name: 'Disney+',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Disney.png',
-    url: 'https://disney.api.edge.bamgrid.com/devices',
-    rules: ['GEOSITE,disney,Disney+'],
-  },
-  {
-    key: 'netflix',
-    name: 'NETFLIX',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Netflix_Letter.png',
-    url: 'https://api.fast.com/netflix/speedtest/v2?https=true',
-    rules: ['GEOSITE,netflix,NETFLIX'],
-  },
-  {
-    key: 'tiktok',
-    name: 'Tiktok',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/TikTok.png',
-    url: 'https://www.tiktok.com/',
-    rules: ['GEOSITE,tiktok,Tiktok'],
-  },
-  {
-    key: 'spotify',
-    name: 'Spotify',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Spotify.png',
-    url: 'https://spclient.wg.spotify.com/signup/public/v1/account',
-    rules: ['GEOSITE,spotify,Spotify'],
-  },
-  {
-    key: 'hbo',
-    name: 'HBO',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/HBO.png',
-    url: 'https://www.hbo.com/favicon.ico',
-    rules: ['GEOSITE,hbo,HBO'],
-  },
-  {
-    key: 'primevideo',
-    name: 'Prime Video',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Prime_Video.png',
-    url: 'https://m.media-amazon.com/images/G/01/digital/video/web/logo-min-remaster.png',
-    rules: ['GEOSITE,primevideo,Prime Video'],
-  },
-  {
-    key: 'hulu',
-    name: 'Hulu',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Hulu.png',
-    url: 'https://auth.hulu.com/v4/web/password/authenticate',
-    rules: ['GEOSITE,hulu,Hulu'],
-  },
-  {
-    key: 'telegram',
-    name: 'Telegram',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Telegram.png',
-    url: 'https://www.telegram.org/img/website_icon.svg',
-    rules: ['GEOIP,telegram,Telegram'],
-  },
-  {
-    key: 'line',
-    name: 'Line',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Line.png',
-    url: 'https://line.me/page-data/app-data.json',
-    rules: ['GEOSITE,line,Line'],
-  },
-  {
-    key: 'games',
-    name: '游戏专用',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Game.png',
-    rules: ['GEOSITE,category-games@cn,国内网站', 'GEOSITE,category-games,游戏专用'],
-  },
+  { key: 'apple', name: '苹果服务', icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Apple.png', url: 'https://www.apple.com/library/test/success.html', rules: ['GEOSITE,apple-cn,苹果服务'] },
+  { key: 'google', name: '谷歌服务', icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Google_Search.png', url: 'https://www.google.com/generate_204', rules: ['GEOSITE,google,谷歌服务'] },
+  { key: 'youtube', name: 'YouTube', icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/YouTube.png', url: 'https://www.youtube.com/s/desktop/494dd881/img/favicon.ico', rules: ['GEOSITE,youtube,YouTube'] },
+  { key: 'bahamut', name: '巴哈姆特', icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Bahamut.png', url: 'https://ani.gamer.com.tw/ajax/getdeviceid.php', rules: ['GEOSITE,bahamut,巴哈姆特'] },
+  { key: 'disney', name: 'Disney+', icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Disney.png', url: 'https://disney.api.edge.bamgrid.com/devices', rules: ['GEOSITE,disney,Disney+'] },
+  { key: 'netflix', name: 'NETFLIX', icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Netflix_Letter.png', url: 'https://api.fast.com/netflix/speedtest/v2?https=true', rules: ['GEOSITE,netflix,NETFLIX'] },
+  { key: 'tiktok', name: 'Tiktok', icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/TikTok.png', url: 'https://www.tiktok.com/', rules: ['GEOSITE,tiktok,Tiktok'] },
+  { key: 'spotify', name: 'Spotify', icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Spotify.png', url: 'https://spclient.wg.spotify.com/signup/public/v1/account', rules: ['GEOSITE,spotify,Spotify'] },
+  { key: 'hbo', name: 'HBO', icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/HBO.png', url: 'https://www.hbo.com/favicon.ico', rules: ['GEOSITE,hbo,HBO'] },
+  { key: 'primevideo', name: 'Prime Video', icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Prime_Video.png', url: 'https://m.media-amazon.com/images/G/01/digital/video/web/logo-min-remaster.png', rules: ['GEOSITE,primevideo,Prime Video'] },
+  { key: 'hulu', name: 'Hulu', icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Hulu.png', url: 'https://auth.hulu.com/v4/web/password/authenticate', rules: ['GEOSITE,hulu,Hulu'] },
+  { key: 'telegram', name: 'Telegram', icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Telegram.png', url: 'https://www.telegram.org/img/website_icon.svg', rules: ['GEOIP,telegram,Telegram'] },
+  { key: 'line', name: 'Line', icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Line.png', url: 'https://line.me/page-data/app-data.json', rules: ['GEOSITE,line,Line'] },
+  { key: 'games', name: '游戏专用', icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Game.png', rules: ['GEOSITE,category-games@cn,国内网站', 'GEOSITE,category-games,游戏专用'] },
 ]
 
 // --- 3. 主入口 ---
@@ -467,10 +299,7 @@ function main(config) {
   config['external-ui'] = 'ui'
   config['external-ui-url'] = `${githubProxy}https://github.com/Zephyruso/zashboard/releases/latest/download/dist.zip`
   config['dns'] = dnsConfig
-  config['profile'] = {
-    'store-selected': true,
-    'store-fake-ip': true,
-  }
+  config['profile'] = { 'store-selected': true, 'store-fake-ip': true }
   config['unified-delay'] = true
   config['tcp-concurrent'] = true
   config['keep-alive-interval'] = 1800
@@ -485,42 +314,18 @@ function main(config) {
     'force-dns-mapping': true,
     'parse-pure-ip': false,
     'override-destination': true,
-    sniff: {
-      TLS: { ports: [443, 8443] },
-      HTTP: { ports: [80, '8080-8880'] },
-      QUIC: { ports: [443, 8443] },
-    },
+    sniff: { TLS: { ports: [443, 8443] }, HTTP: { ports: [80, '8080-8880'] }, QUIC: { ports: [443, 8443] } },
     'skip-src-address': skipIps,
     'skip-dst-address': skipIps,
-    'force-domain': [
-      'geosite:google',
-      'geosite:youtube',
-      'geosite:category-ai-!cn',
-      'geosite:netflix',
-      'geosite:facebook',
-      'geosite:twitter',
-    ],
+    'force-domain': ['geosite:google', 'geosite:youtube', 'geosite:category-ai-!cn', 'geosite:netflix', 'geosite:facebook', 'geosite:twitter'],
     'skip-domain': ['Mijia Cloud', '+.oray.com'],
   }
 
-  config['ntp'] = {
-    enable: true,
-    'write-to-system': false,
-    server: 'cn.ntp.org.cn',
-  }
+  config['ntp'] = { enable: true, 'write-to-system': false, server: 'cn.ntp.org.cn' }
   config['tun'] = {
-    enable: true,
-    stack: 'system',
-    device: 'utun1999',
-    'auto-route': true,
-    'auto-redirect': true,
-    'auto-detect-interface': true,
-    'strict-route': true,
-    mtu: 1500,
-    gso: true,
-    'gso-max-size': 65536,
-    'exclude-interface': ['NodeBabyLink'],
-    'route-exclude-address': skipIps.filter((ip) => ip !== '198.18.0.0/16'),
+    enable: true, stack: 'system', device: 'utun1999', 'auto-route': true, 'auto-redirect': true,
+    'auto-detect-interface': true, 'strict-route': true, mtu: 1500, gso: true, 'gso-max-size': 65536,
+    'exclude-interface': ['NodeBabyLink'], 'route-exclude-address': skipIps.filter((ip) => ip !== '198.18.0.0/16'),
     'dns-hijack': ['any:53', 'tcp://any:53'],
   }
   config['geox-url'] = {
@@ -546,16 +351,10 @@ function main(config) {
           type: cfg.type || 'http',
           url: cfg.url,
           interval: cfg.interval || 86400,
-          'health-check': {
-            enable: true,
-            url: 'https://www.gstatic.com/generate_204',
-            interval: checkInterval,
-          },
+          'health-check': { enable: true, url: 'https://www.gstatic.com/generate_204', interval: checkInterval }, // Provider应用测速变量
         }
         if (cfg.override && cfg.override['additional-prefix']) {
-          provider.override = {
-            'additional-prefix': cfg.override['additional-prefix'],
-          }
+          provider.override = { 'additional-prefix': cfg.override['additional-prefix'] }
         }
         config['proxy-providers'][key] = provider
       })
@@ -605,35 +404,18 @@ function main(config) {
     const hasLocalNodes = groupData.proxies.length > 0
 
     if (hasLocalNodes) {
-      const group = {
-        ...groupBaseOption,
-        name: r.name,
-        type: 'url-test',
-        tolerance: 50,
-        icon: r.icon,
-        proxies: groupData.proxies,
-      }
-      if (hasProviders) {
-        group.use = providerKeys
-        group.filter = r.filter
-      }
+      const group = { ...groupBaseOption, name: r.name, type: 'url-test', tolerance: 50, icon: r.icon, proxies: groupData.proxies }
+      if (hasProviders) { group.use = providerKeys; group.filter = r.filter }
       generatedRegionGroups.push(group)
     }
   })
 
   if (otherProxies.length > 0 || hasProviders) {
-    const otherGroup = {
-      ...groupBaseOption,
-      name: '其他节点',
-      type: 'select',
-      icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Global.png',
-    }
+    const otherGroup = { ...groupBaseOption, name: '其他节点', type: 'select', icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Global.png' }
     if (otherProxies.length > 0) otherGroup.proxies = otherProxies
     if (hasProviders) {
       otherGroup.use = providerKeys
-      if (otherProxies.length === 0) {
-        otherGroup.filter = `(?i)^(?!.*(?:${allRegionKeywords})).*`
-      }
+      if (otherProxies.length === 0) otherGroup.filter = `(?i)^(?!.*(?:${allRegionKeywords})).*`
     }
     generatedRegionGroups.push(otherGroup)
   }
@@ -643,9 +425,7 @@ function main(config) {
   const allLocalProxyNames = []
   regionDefinitions.forEach((r) => {
     const groupData = regionGroups[r.name]
-    if (groupData && groupData.proxies.length > 0) {
-      allLocalProxyNames.push(...groupData.proxies)
-    }
+    if (groupData && groupData.proxies.length > 0) allLocalProxyNames.push(...groupData.proxies)
   })
   allLocalProxyNames.push(...otherProxies)
 
@@ -655,47 +435,32 @@ function main(config) {
   // 主节点：依据名称包含“自建”提取
   const primaryProxies = allLocalProxyNames.filter(name => name.includes('自建'))
   const primaryGroup = {
-    ...groupBaseOption,
-    name: '主节点',
-    type: 'url-test', 
-    tolerance: 50,    
+    ...groupBaseOption, name: '主节点', type: 'url-test', tolerance: 50,
     proxies: primaryProxies.length > 0 ? primaryProxies : ['直连'],
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_States.png',
   }
-  if (hasProviders) {
-    primaryGroup.use = providerKeys
-    primaryGroup.filter = '自建'
-  }
+  if (hasProviders) { primaryGroup.use = providerKeys; primaryGroup.filter = '自建' }
   functionalGroups.push(primaryGroup)
 
   // 备用节点：排除自建，排除专线，且仅限于日本或新加坡节点，走延迟最低测速
   const backupProxies = allLocalProxyNames.filter(name => 
-    !name.includes('自建') && 
-    !name.includes('专线') && 
-    /日本|🇯🇵|jp|japan|新加坡|🇸🇬|sg|singapore/i.test(name)
+    !name.includes('自建') && !name.includes('专线') && /日本|🇯🇵|jp|japan|新加坡|🇸🇬|sg|singapore/i.test(name)
   )
   const backupGroup = {
-    ...groupBaseOption,
-    name: '备用节点',
-    type: 'url-test',
-    tolerance: 50,
+    ...groupBaseOption, name: '备用节点', type: 'url-test', tolerance: 50,
     proxies: backupProxies.length > 0 ? backupProxies : ['直连'],
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Japan.png',
   }
   if (hasProviders) {
     backupGroup.use = providerKeys
     backupGroup.filter = '(?i)日本|🇯🇵|jp|japan|新加坡|🇸🇬|sg|singapore'
-    backupGroup['exclude-filter'] = '(?i)自建|专线' // 通过 Mihomo 原生特性拦截 Provider 里的自建和专线节点
+    backupGroup['exclude-filter'] = '(?i)自建|专线'
   }
   functionalGroups.push(backupGroup)
 
   // Health Restore (自动恢复兜底组)
-  // 仅在主节点和备用节点中切换
   const defaultNodeGroup = {
-    ...groupBaseOption,
-    name: '默认节点',
-    type: 'fallback', 
-    proxies: ['主节点', '备用节点'], 
+    ...groupBaseOption, name: '默认节点', type: 'fallback', proxies: ['主节点', '备用节点'],
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png',
   }
   functionalGroups.push(defaultNodeGroup)
@@ -703,47 +468,26 @@ function main(config) {
   serviceConfigs.forEach((svc) => {
     if (ruleOptions[svc.key]) {
       rules.push(...svc.rules)
-
       if (Array.isArray(svc.providers)) {
-        svc.providers.forEach((p) => {
-          ruleProviders[p.key] = {
-            ...ruleProviderCommon,
-            behavior: p.behavior,
-            format: p.format,
-            url: p.url,
-            path: p.path,
-          }
-        })
+        svc.providers.forEach((p) => { ruleProviders[p.key] = { ...ruleProviderCommon, behavior: p.behavior, format: p.format, url: p.url, path: p.path } })
       }
 
       let groupProxies
-
       if (svc.reject) {
         groupProxies = ['REJECT', '直连', '默认节点']
       } else if (svc.key === 'bahamut') {
         groupProxies = ['默认节点', ...regionGroupNames, '直连']
       } else if (svc.key === 'openai' || svc.key === 'crypto') {
-        // AI 规则指定出口挂靠到默认节点和备用节点，保留完整手动控制权
         groupProxies = ['默认节点', '备用节点', '主节点', '直连']
         svc._isStrictRegion = false
       } else {
         groupProxies = ['默认节点', ...regionGroupNames, '直连']
       }
 
-      const group = {
-        ...groupBaseOption,
-        name: svc.name,
-        type: 'select',
-        proxies: groupProxies,
-        url: svc.url,
-        icon: svc.icon,
-      }
-
+      const group = { ...groupBaseOption, name: svc.name, type: 'select', proxies: groupProxies, url: svc.url, icon: svc.icon }
       if (hasProviders) {
         group.use = providerKeys
-        if (svc._isStrictRegion) {
-          group.filter = '(?i)港|🇭🇰|hk|hongkong|美|🇺🇸|us|usa|日本|🇯🇵|jp|japan|新加坡|🇸🇬|sg|singapore'
-        }
+        if (svc._isStrictRegion) group.filter = '(?i)港|🇭🇰|hk|hongkong|美|🇺🇸|us|usa|日本|🇯🇵|jp|japan|新加坡|🇸🇬|sg|singapore'
       }
       functionalGroups.push(group)
     }
@@ -751,13 +495,8 @@ function main(config) {
 
   // 3.6 通用兜底策略组
   rules.push(
-    'GEOSITE,private,直连',
-    'GEOSITE,category-public-tracker,直连',
-    'GEOSITE,category-game-platforms-download@cn,直连',
-    'GEOIP,private,直连,no-resolve',
-    'GEOSITE,cn,国内网站',
-    'GEOIP,cn,国内网站,no-resolve',
-    'MATCH,其他外网'
+    'GEOSITE,private,直连', 'GEOSITE,category-public-tracker,直连', 'GEOSITE,category-game-platforms-download@cn,直连',
+    'GEOIP,private,直连,no-resolve', 'GEOSITE,cn,国内网站', 'GEOIP,cn,国内网站,no-resolve', 'MATCH,其他外网'
   )
 
   const buildFixedGroup = (opts) => {
@@ -767,19 +506,8 @@ function main(config) {
   }
 
   functionalGroups.push(
-    buildFixedGroup({
-      name: '其他外网',
-      type: 'select',
-      proxies: ['默认节点', '国内网站', ...allLocalProxyNames],
-      icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Dark/GlobalMedia.png',
-    }),
-    buildFixedGroup({
-      name: '国内网站',
-      type: 'select',
-      proxies: ['直连', '默认节点', ...allLocalProxyNames],
-      url: 'https://wifi.vivo.com.cn/generate_204',
-      icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/China_Map.png',
-    })
+    buildFixedGroup({ name: '其他外网', type: 'select', proxies: ['默认节点', '国内网站', ...allLocalProxyNames], icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Dark/GlobalMedia.png' }),
+    buildFixedGroup({ name: '国内网站', type: 'select', proxies: ['直连', '默认节点', ...allLocalProxyNames], url: 'https://wifi.vivo.com.cn/generate_204', icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/China_Map.png' })
   )
 
   // 3.7 组装最终结果
