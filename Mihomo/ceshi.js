@@ -69,6 +69,7 @@ const args =
         githubProxy: 'https://ghfast.top/',
         subscriptions: _proxyProviders,
         checkInterval: 900, // 修改点：测速间隔改为 900 秒 (15分钟)
+        aiExcludedRegions: 'CN;RU;BY;IR;KP;SY;CU;AF',
       }
 
 let {
@@ -88,6 +89,7 @@ let {
   githubProxy = 'https://ghfast.top/',
   subscriptions = _proxyProviders,
   checkInterval = 900, // 提取测速间隔，默认 15 分钟
+  aiExcludedRegions = 'CN;RU;BY;IR;KP;SY;CU;AF',
 } = args
 
 /**
@@ -181,6 +183,29 @@ const allRegionDefinitions = [
   { name: 'CA加拿大', regex: /加拿大|🇨🇦|ca|canada/i, filter: '(?i)加拿大|🇨🇦|ca|canada', icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Canada.png' },
   { name: 'AU澳大利亚', regex: /澳大利亚|🇦🇺|au|australia|sydney/i, filter: '(?i)澳大利亚|🇦🇺|au|australia|sydney', icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Australia.png' },
 ]
+
+const aiRegionPatterns = {
+  CN: '(?:中国大陆|中国内地|Mainland[ -]?China|PRC|🇨🇳)',
+  RU: '(?:俄罗斯|Russian Federation|Russia|RUS|\\bRU\\b|🇷🇺)',
+  BY: '(?:白俄罗斯|Belarus|\\bBY\\b|🇧🇾)',
+  IR: '(?:伊朗|Iran|\\bIR\\b|🇮🇷)',
+  KP: '(?:朝鲜|北韩|DPRK|North Korea|\\bKP\\b|🇰🇵)',
+  SY: '(?:叙利亚|Syria|\\bSY\\b|🇸🇾)',
+  CU: '(?:古巴|Cuba|\\bCU\\b|🇨🇺)',
+  AF: '(?:阿富汗|Afghanistan|\\bAF\\b|🇦🇫)',
+}
+
+function buildAiRegionPattern(codes) {
+  return codes.map((code) => aiRegionPatterns[code]).filter(Boolean).join('|')
+}
+
+function buildAiRegionMatcher(codes) {
+  const pattern = buildAiRegionPattern(codes)
+  return pattern ? new RegExp(pattern, 'i') : null
+}
+
+const aiExcludedCodes = stringToArray(aiExcludedRegions).map((code) => code.toUpperCase())
+const aiRegionMatcher = buildAiRegionMatcher(aiExcludedCodes)
 
 let regionDefinitions = []
 if (regionSet === 'all') {
@@ -660,10 +685,23 @@ function main(config) {
   // 3.5 构建功能策略组
   const functionalGroups = []
   const primaryLocalNodes = allLocalProxyNames.filter((name) => name.includes('自建'))
-  const dynamicLocalNodes = allLocalProxyNames.filter((name) => !name.includes('自建'))
+  const dynamicRegionDefinitions = ['JP日本', 'SG新加坡']
+    .map((name) => regionDefinitions.find((region) => region.name === name))
+    .filter(Boolean)
+  const dynamicLocalNodes = allLocalProxyNames
+    .filter((name) => dynamicRegionDefinitions.some((region) => region.regex.test(name)))
+    .filter((name) => !name.includes('自建'))
+    .filter((name) => !aiRegionMatcher || !aiRegionMatcher.test(name))
+  const dynamicProviderFilter = dynamicRegionDefinitions
+    .map((region) => region.filter.replace(/^\(\?i\)/, ''))
+    .join('|')
+  const dynamicExcludeParts = ['自建']
+  const aiRegionPattern = buildAiRegionPattern(aiExcludedCodes)
+  if (aiRegionPattern) dynamicExcludeParts.push(aiRegionPattern)
+  const dynamicProviderExcludeFilter = `(?i)${dynamicExcludeParts.join('|')}`
   const defaultNodeProxies = []
   const shouldBuildPrimary = primaryLocalNodes.length > 0 || hasProviders
-  const shouldBuildDynamic = dynamicLocalNodes.length > 0 || hasProviders
+  const shouldBuildDynamic = dynamicLocalNodes.length > 0 || (hasProviders && dynamicProviderFilter)
 
   if (shouldBuildPrimary) {
     const primaryGroup = {
@@ -686,7 +724,7 @@ function main(config) {
   if (shouldBuildDynamic) {
     const dynamicGroup = {
       ...groupBaseOption,
-      name: '动态均衡',
+      name: '备用节点',
       type: 'url-test',
       url: 'https://chatgpt.com/cdn-cgi/trace',
       'expected-status': 200,
@@ -697,14 +735,15 @@ function main(config) {
     if (dynamicLocalNodes.length > 0) dynamicGroup.proxies = dynamicLocalNodes
     if (hasProviders) {
       dynamicGroup.use = providerKeys
-      dynamicGroup['exclude-filter'] = '自建'
+      dynamicGroup.filter = `(?i)${dynamicProviderFilter}`
+      dynamicGroup['exclude-filter'] = dynamicProviderExcludeFilter
     }
     functionalGroups.push(dynamicGroup)
-    defaultNodeProxies.push('动态均衡')
+    defaultNodeProxies.push('备用节点')
   }
 
   if (defaultNodeProxies.length === 0) {
-    throw new Error('现有过滤后未找到可用于主节点或动态均衡的候选节点')
+    throw new Error('现有过滤后未找到可用于主节点或备用节点的候选节点')
   }
 
   const defaultNodeGroup = {
