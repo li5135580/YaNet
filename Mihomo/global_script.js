@@ -1,6 +1,6 @@
 /***
  * Clash Verge Rev / Mihomo Party 优化脚本 
- * 优化点：严格参数配置 / 安全收口 / 自建分流 / AI 动态均衡
+ * 优化点：严格参数配置 / 安全收口 / 自建主节点 / 日新备用节点
  */
 
 function stringToArray(val) {
@@ -70,7 +70,7 @@ const args =
         checkInterval: 900,
       }
 
-// 优化 1：使用 ?? (Nullish coalescing) 完全解决 false 被 || 吞掉的基础逻辑 bug
+// 使用 ?? 解决 false 被吞的基础逻辑 bug
 let enable = args.enable ?? true;
 let ruleSet = args.ruleSet ?? 'all';
 let regionSet = args.regionSet ?? 'all';
@@ -453,10 +453,10 @@ function main(config) {
     throw new Error('配置文件中未找到任何代理')
   }
 
-  // 优化 2：外部控制面安全收口
-  config['allow-lan'] = false // 禁用局域网控制
-  config['bind-address'] = '127.0.0.1' // 绑定至本地
-  config['external-controller'] = '127.0.0.1:1906' // 控制面收口至本地回环
+  // 外部控制面安全收口
+  config['allow-lan'] = false
+  config['bind-address'] = '127.0.0.1'
+  config['external-controller'] = '127.0.0.1:1906'
   
   config['mode'] = 'rule'
   config['ipv6'] = ipv6
@@ -652,7 +652,7 @@ function main(config) {
   // 3.5 构建功能策略组
   const functionalGroups = []
 
-  // 优化 3：根据名称“自建”动态剥离归属主节点
+  // 主节点：依据名称包含“自建”提取
   const primaryProxies = allLocalProxyNames.filter(name => name.includes('自建'))
   const primaryGroup = {
     ...groupBaseOption,
@@ -668,21 +668,23 @@ function main(config) {
   }
   functionalGroups.push(primaryGroup)
 
-  // 优化 4：除主节点（包含“自建”）外其余所有归入动态均衡并启用延迟最低判定
-  const dynamicBalanceProxies = allLocalProxyNames.filter(name => !name.includes('自建'))
-  const dynamicBalanceGroup = {
+  // 备用节点：排除自建，且仅限于日本或新加坡节点，走延迟最低测速
+  const backupProxies = allLocalProxyNames.filter(name => 
+    !name.includes('自建') && /日本|🇯🇵|jp|japan|新加坡|🇸🇬|sg|singapore/i.test(name)
+  )
+  const backupGroup = {
     ...groupBaseOption,
-    name: '动态均衡',
-    type: 'url-test', // 自动选择最低延迟的可用节点
+    name: '备用节点',
+    type: 'url-test',
     tolerance: 50,
-    proxies: dynamicBalanceProxies.length > 0 ? dynamicBalanceProxies : ['直连'],
+    proxies: backupProxies.length > 0 ? backupProxies : ['直连'],
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Japan.png',
   }
   if (hasProviders) {
-    dynamicBalanceGroup.use = providerKeys
-    dynamicBalanceGroup.filter = '^(?!.*自建).*' // 使用正则排除自建节点
+    backupGroup.use = providerKeys
+    backupGroup.filter = '(?i)日本|🇯🇵|jp|japan|新加坡|🇸🇬|sg|singapore'
   }
-  functionalGroups.push(dynamicBalanceGroup)
+  functionalGroups.push(backupGroup)
 
   const autoSelectGroup = {
     ...groupBaseOption,
@@ -695,48 +697,15 @@ function main(config) {
   if (hasProviders) autoSelectGroup.use = providerKeys
   functionalGroups.push(autoSelectGroup)
 
-  // Health Restore (自动恢复)
+  // Health Restore (自动恢复兜底组)
   const defaultNodeGroup = {
     ...groupBaseOption,
     name: '默认节点',
     type: 'fallback', 
-    proxies: ['主节点', '动态均衡', '自动优选'], // 将原“备用节点”替换为“动态均衡”
+    proxies: ['主节点', '备用节点', '自动优选'], 
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png',
   }
   functionalGroups.push(defaultNodeGroup)
-
-  // 智能负载保持原样，与 url-test 机制互补
-  const loadBalanceProxies = ['主节点']
-  if (regionGroupNames.includes('HK香港')) loadBalanceProxies.push('HK香港')
-  if (regionGroupNames.includes('JP日本')) loadBalanceProxies.push('JP日本')
-  if (loadBalanceProxies.length === 1 && otherProxies.length > 0) {
-    loadBalanceProxies.push('自动优选')
-  }
-
-  const loadBalanceGroup = {
-    ...groupBaseOption,
-    name: '智能负载',
-    type: 'load-balance',
-    strategy: 'consistent-hashing',
-    proxies: loadBalanceProxies,
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Download.png',
-  }
-  functionalGroups.push(loadBalanceGroup)
-
-  const loadBalanceRules = [
-    'DOMAIN-SUFFIX,docker.com,智能负载',
-    'DOMAIN-SUFFIX,docker.io,智能负载',
-    'GEOSITE,steam,智能负载',
-    'DOMAIN-SUFFIX,githubusercontent.com,智能负载', 
-    'PROCESS-NAME-REGEX,(?i).*aria2.*,智能负载',
-    'PROCESS-NAME-REGEX,(?i).*idman.*,智能负载',
-    'PROCESS-NAME-REGEX,(?i).*qbittorrent.*,智能负载',
-    'PROCESS-NAME-REGEX,(?i).*transmission.*,智能负载',
-    'PROCESS-NAME-REGEX,(?i).*bitcomet.*,智能负载',
-    'PROCESS-NAME-REGEX,(?i).*fdm.*,智能负载' 
-  ]
-  rules.push(...loadBalanceRules)
-
 
   serviceConfigs.forEach((svc) => {
     if (ruleOptions[svc.key]) {
@@ -761,8 +730,8 @@ function main(config) {
       } else if (svc.key === 'bahamut') {
         groupProxies = ['默认节点', ...regionGroupNames, '直连']
       } else if (svc.key === 'openai' || svc.key === 'crypto') {
-        // 优化 5：解锁所有 AI 访问并挂靠至全新的“动态均衡”（确保全部 AI 流量享受非主节点大底盘中的延迟最低节点）
-        groupProxies = ['动态均衡', '主节点', '直连']
+        // AI 规则指定出口挂靠到备用节点（日新最低延迟组），若挂了则退回主节点
+        groupProxies = ['备用节点', '主节点', '直连']
         svc._isStrictRegion = false
       } else {
         groupProxies = ['默认节点', ...regionGroupNames, '直连']
