@@ -59,8 +59,8 @@ const args =
         // 🚀 【核心性能与耗电配置】 🚀
         // 电脑端无缝切换体验建议：checkInterval = 300, lazy = false
         // 移动端省电建议：checkInterval = 900, lazy = true
-        checkInterval: 300, // 全局节点测速间隔 (单位：秒)
-        lazy: false,        // 是否开启按需测速 (false: 后台持续测速保持热启动; true: 需要时才唤醒测速)
+        checkInterval: 900, // 全局节点测速间隔 (单位：秒)
+        lazy: true,        // 是否开启按需测速 (false: 后台持续测速保持热启动; true: 需要时才唤醒测速)
       }
 
 // 使用 ?? 解决 false 被吞的基础逻辑 bug
