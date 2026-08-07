@@ -1,6 +1,6 @@
 /***
  * Clash Verge Rev / Mihomo Party 优化脚本 
- * 优化点：严格参数配置 / 安全收口 / 自建主节点 / 日新备用节点
+ * 优化点：严格参数配置 / 安全收口 / 自建主节点 / 日新备用节点(排除专线) / 极简分组
  */
 
 function stringToArray(val) {
@@ -668,9 +668,11 @@ function main(config) {
   }
   functionalGroups.push(primaryGroup)
 
-  // 备用节点：排除自建，且仅限于日本或新加坡节点，走延迟最低测速
+  // 备用节点：排除自建，排除专线，且仅限于日本或新加坡节点，走延迟最低测速
   const backupProxies = allLocalProxyNames.filter(name => 
-    !name.includes('自建') && /日本|🇯🇵|jp|japan|新加坡|🇸🇬|sg|singapore/i.test(name)
+    !name.includes('自建') && 
+    !name.includes('专线') && 
+    /日本|🇯🇵|jp|japan|新加坡|🇸🇬|sg|singapore/i.test(name)
   )
   const backupGroup = {
     ...groupBaseOption,
@@ -683,26 +685,17 @@ function main(config) {
   if (hasProviders) {
     backupGroup.use = providerKeys
     backupGroup.filter = '(?i)日本|🇯🇵|jp|japan|新加坡|🇸🇬|sg|singapore'
+    backupGroup['exclude-filter'] = '(?i)自建|专线' // 通过 Mihomo 原生特性拦截 Provider 里的自建和专线节点
   }
   functionalGroups.push(backupGroup)
 
-  const autoSelectGroup = {
-    ...groupBaseOption,
-    name: '自动优选',
-    type: 'url-test',
-    tolerance: 50,
-    proxies: allLocalProxyNames.length > 0 ? allLocalProxyNames : ['直连'],
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Auto.png'
-  }
-  if (hasProviders) autoSelectGroup.use = providerKeys
-  functionalGroups.push(autoSelectGroup)
-
   // Health Restore (自动恢复兜底组)
+  // 仅在主节点和备用节点中切换
   const defaultNodeGroup = {
     ...groupBaseOption,
     name: '默认节点',
     type: 'fallback', 
-    proxies: ['主节点', '备用节点', '自动优选'], 
+    proxies: ['主节点', '备用节点'], 
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png',
   }
   functionalGroups.push(defaultNodeGroup)
@@ -730,7 +723,6 @@ function main(config) {
       } else if (svc.key === 'bahamut') {
         groupProxies = ['默认节点', ...regionGroupNames, '直连']
       } else if (svc.key === 'openai' || svc.key === 'crypto') {
-        // AI 规则指定出口挂靠到备用节点（日新最低延迟组），若挂了则退回主节点
         groupProxies = ['备用节点', '主节点', '直连']
         svc._isStrictRegion = false
       } else {
