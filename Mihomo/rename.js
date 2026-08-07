@@ -1,13 +1,8 @@
 /**
  * Ultimate Sub-Store Rename Script（增强版，支持URL编码国旗）
- *
- * 功能：
- * 1. 自动识别地区（中/英/关键词 + URL编码国旗）
- * 2. 自动提取IP前三段 / 域名简化
- * 3. 自动识别协议类型（Vision / Reality / WS / gRPC / TCP）
- * 4. 自动过滤信息节点
- * 5. 输出统一格式：
- *    🇯🇵 日本 | 123.45.67 | Vision-gRPC
+ *功能： * 1. 自动识别地区（中/英/关键词 + URL编码国旗） * 2. 自动提取IP前三段 / 域名简化 * 3. 自动识别协议类型（Vision / Reality / WS / gRPC / TCP） * 4. 自动过滤信息节点 * 5. 输出统一格式：
+ * 输出格式：
+ *    *    🇯🇵 自建| 123.45 | Vision-gRPC
  */
 
 function operator(proxies = []) {
@@ -29,7 +24,7 @@ function operator(proxies = []) {
     try {
       return decodeURIComponent(str);
     } catch (e) {
-      return str; // 解码失败则返回原字符串
+      return str;
     }
   };
 
@@ -99,15 +94,16 @@ function operator(proxies = []) {
 
   const DOMAIN_SUFFIXES = /\.(com|net|org|xyz|io|co|cn)$/i;
 
+  // 按你的示例，IP 只保留前两段：123.45
   const simplifyEntry = (server) => {
     let s = String(server || "").toLowerCase().trim();
 
     if (!s) return "unknown";
 
-    // IP → 取前三段
+    // IP → 取前两段
     if (/^\d+\.\d+\.\d+\.\d+$/.test(s)) {
       const parts = s.split(".");
-      return `${parts[0]}.${parts[1]}.${parts[2]}`;
+      return `${parts[0]}.${parts[1]}`;
     }
 
     // 域名 → 去后缀
@@ -148,7 +144,7 @@ function operator(proxies = []) {
   return filteredProxies.map(p => {
     // 获取节点名称并进行URL解码
     const decodedName = decodeURIComponentSafe(p.name || "");
-    
+
     const text = lower([
       decodedName,
       p.server,
@@ -156,7 +152,7 @@ function operator(proxies = []) {
       p.host
     ].join(" "));
 
-    // 1️⃣ 地区
+    // 1️⃣ 地区识别（保留用于国旗）
     const region = detectRegion(text);
 
     // 2️⃣ 国旗
@@ -168,38 +164,11 @@ function operator(proxies = []) {
     // 4️⃣ 协议
     const feature = detectFeature(p);
 
-    // 5️⃣ 最终名称（无编号格式）
-    p.name = `${flag} ${region} | ${entry} | ${feature}`;
+    // 5️⃣ 最终名称：固定“自建”
+    p.name = `${flag} 自建| ${entry} | ${feature}`;
 
     return p;
   });
 }
 
-// 测试用例
 console.log("增强版脚本加载完成");
-
-// 示例使用
-/*
-const testProxies = [
-  { 
-    name: "hk%20ser659347229709%20tuic", 
-    server: "154.222.22.91", 
-    sni: "addons.mozilla.org", 
-    type: "tcp", 
-    network: "tcp", 
-    security: "reality", 
-    flow: ""
-  },
-  { 
-    name: "%F0%9F%87%AD%F0%9F%87%B0%20ser659347229709%20xtls-reality", // 🇭🇰 URL编码
-    server: "154.222.22.91", 
-    sni: "addons.mozilla.org", 
-    type: "tcp", 
-    network: "tcp", 
-    security: "reality", 
-    flow: "xtls-rprx-vision"
-  }
-];
-
-console.log(operator(testProxies));
-*/
