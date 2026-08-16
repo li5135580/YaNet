@@ -61,6 +61,11 @@ const args =
         // 移动端省电建议：checkInterval = 900, lazy = true
         checkInterval: 900, // 全局节点测速间隔 (单位：秒)
         lazy: true,        // 是否开启按需测速 (false: 后台持续测速保持热启动; true: 需要时才唤醒测速)
+
+        // 🚀 【主节点分组开关】
+        // true  = 保留“主节点”分组及原有结构
+        // false = 禁用“主节点”分组，并自动移除其他策略组对“主节点”的引用
+        enablePrimaryNode: false,
       }
 
 // 使用 ?? 解决 false 被吞的基础逻辑 bug
@@ -81,6 +86,7 @@ let githubProxy = args.githubProxy ?? 'https://ghfast.top/';
 let subscriptions = args.subscriptions ?? _proxyProviders;
 let checkInterval = args.checkInterval ?? 300; // 提取测速间隔
 let lazy = args.lazy ?? false;                 // 提取懒测速开关
+let enablePrimaryNode = args.enablePrimaryNode ?? true; // 主节点分组开关
 
 /**
  * 模式配置
@@ -433,14 +439,17 @@ function main(config) {
   const functionalGroups = []
 
   // 主节点：依据名称包含“自建”提取
+  // 开关关闭时，不创建“主节点”策略组。
   const primaryProxies = allLocalProxyNames.filter(name => name.includes('自建'))
-  const primaryGroup = {
-    ...groupBaseOption, name: '主节点', type: 'url-test', tolerance: 50,
-    proxies: primaryProxies.length > 0 ? primaryProxies : ['直连'],
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_States.png',
+  if (enablePrimaryNode) {
+    const primaryGroup = {
+      ...groupBaseOption, name: '主节点', type: 'url-test', tolerance: 50,
+      proxies: primaryProxies.length > 0 ? primaryProxies : ['直连'],
+      icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_States.png',
+    }
+    if (hasProviders) { primaryGroup.use = providerKeys; primaryGroup.filter = '自建' }
+    functionalGroups.push(primaryGroup)
   }
-  if (hasProviders) { primaryGroup.use = providerKeys; primaryGroup.filter = '自建' }
-  functionalGroups.push(primaryGroup)
 
   // 备用节点：排除自建，排除专线，且仅限于日本或新加坡节点，走延迟最低测速
   const backupProxies = allLocalProxyNames.filter(name => 
@@ -460,7 +469,10 @@ function main(config) {
 
   // Health Restore (自动恢复兜底组)
   const defaultNodeGroup = {
-    ...groupBaseOption, name: '默认节点', type: 'fallback', proxies: ['主节点', '备用节点'],
+    ...groupBaseOption,
+    name: '默认节点',
+    type: 'fallback',
+    proxies: enablePrimaryNode ? ['主节点', '备用节点'] : ['备用节点'],
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png',
   }
   functionalGroups.push(defaultNodeGroup)
@@ -478,7 +490,9 @@ function main(config) {
       } else if (svc.key === 'bahamut') {
         groupProxies = ['默认节点', ...regionGroupNames, '直连']
       } else if (svc.key === 'openai' || svc.key === 'crypto') {
-        groupProxies = ['默认节点', '备用节点', '主节点', '直连']
+        groupProxies = enablePrimaryNode
+          ? ['默认节点', '备用节点', '主节点', '直连']
+          : ['默认节点', '备用节点', '直连']
         svc._isStrictRegion = false
       } else {
         groupProxies = ['默认节点', ...regionGroupNames, '直连']
