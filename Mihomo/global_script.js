@@ -776,21 +776,29 @@ const serviceConfigs = [
     ]
   },
 
-  {
+{
     key: 'telegram',
     name: 'Telegram',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Telegram.png',
     url: 'https://www.telegram.org/img/website_icon.svg',
     rules: [
-      'RULE-SET,telegram_mrs,Telegram'
+      'RULE-SET,telegram_domain_mrs,Telegram',
+      'RULE-SET,telegram_ip_mrs,Telegram'
     ],
     providers: [
       {
-        key: 'telegram_mrs',
-        url: `${githubProxy}https://github.com/DustinWin/ruleset_geodata/raw/refs/heads/mihomo-ruleset/telegram.mrs`,
-        path: './ruleset/dustinwin/telegram.mrs',
+        key: 'telegram_domain_mrs',
+        url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/telegram.mrs`,
+        path: './ruleset/metacubex/telegram_domain.mrs',
         format: 'mrs',
-        behavior: 'classical'
+        behavior: 'domain'
+      },
+      {
+        key: 'telegram_ip_mrs',
+        url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/telegram.mrs`,
+        path: './ruleset/metacubex/telegram_ip.mrs',
+        format: 'mrs',
+        behavior: 'ipcidr'
       }
     ]
   },
