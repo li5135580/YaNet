@@ -79,29 +79,21 @@ const args =
         subscriptions: _proxyProviders,
 
         // 🚀 【核心性能与耗电配置】 🚀
-        // 电脑端无缝切换体验建议：checkInterval = 300, lazy = false
-        // 移动端省电建议：checkInterval = 900, lazy = true
+        // 电脑端无缝切换体验建议：checkInterval = 300, lazy = false、移动端省电建议：checkInterval = 900, lazy = true
         checkInterval: 900,
 
         // 是否开启按需测速
-        // false = 后台持续测速保持热启动
-        // true = 需要时才唤醒测速
+        // false = 后台持续测速保持热启动、true = 需要时才唤醒测速
         lazy: true,
 
         // ==========================================
         // 🚀 【主节点分组开关】
         // ==========================================
-        //
         // true：
-        //   保留“主节点”策略组
-        //   默认节点可以使用主节点
-        //   AI / 虚拟货币可以使用主节点
-        //
+        //   保留“主节点”策略组、默认节点可以使用主节点、AI / 虚拟货币可以使用主节点
         // false：
-        //   完全禁用“主节点”策略组
-        //   其他策略组自动删除“主节点”引用
-        //
-        enablePrimaryNode: true,
+        //   完全禁用“主节点”策略组、其他策略组自动删除“主节点”引用
+        enablePrimaryNode: false,
       }
 
 // 使用 ?? 解决 false 被吞的基础逻辑 bug
