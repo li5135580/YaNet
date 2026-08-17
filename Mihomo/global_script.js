@@ -1,6 +1,6 @@
 /***
  * Clash Verge Rev / Mihomo Party 优化脚本
- * 优化点：严格参数配置 / 安全收口 / 自建主节点 / 日新备用节点(排除专线) / AI节点重构
+ * 优化点：严格参数配置 / 安全收口 / 自建主节点 / 日新备用节点(排除专线) / AI节点重构 / 全量 MRS 远程规则替换
  */
 
 function stringToArray(val) {
@@ -216,117 +216,74 @@ const allRegionDefinitions = [
   {
     name: 'HK香港',
     regex: /港|🇭🇰|hk|hongkong|hong kong/i,
-    filter:
-      '(?i)港|🇭🇰|hk|hongkong|hong kong',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Hong_Kong.png'
+    filter: '(?i)港|🇭🇰|hk|hongkong|hong kong',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Hong_Kong.png'
   },
-
   {
     name: 'US美国',
-    regex:
-      /\b(usa|united states)\b|(?:\b|_)us(?:\b|_|\d+)|美|🇺🇸/i,
-    filter:
-      '(?i)\\b(usa|united states)\\b|(?:\\b|_)us(?:\\b|_|\\d+)|美|🇺🇸',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_States.png'
+    regex: /\b(usa|united states)\b|(?:\b|_)us(?:\b|_|\d+)|美|🇺🇸/i,
+    filter: '(?i)\\b(usa|united states)\\b|(?:\\b|_)us(?:\\b|_|\\d+)|美|🇺🇸',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_States.png'
   },
-
   {
     name: 'JP日本',
     regex: /日本|🇯🇵|jp|japan/i,
-    filter:
-      '(?i)日本|🇯🇵|jp|japan',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Japan.png'
+    filter: '(?i)日本|🇯🇵|jp|japan',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Japan.png'
   },
-
   {
     name: 'KR韩国',
     regex: /韩|🇰🇷|kr|korea/i,
-    filter:
-      '(?i)韩|🇰🇷|kr|korea',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Korea.png'
+    filter: '(?i)韩|🇰🇷|kr|korea',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Korea.png'
   },
-
   {
     name: 'SG新加坡',
     regex: /新加坡|🇸🇬|sg|singapore/i,
-    filter:
-      '(?i)新加坡|🇸🇬|sg|singapore',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Singapore.png'
+    filter: '(?i)新加坡|🇸🇬|sg|singapore',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Singapore.png'
   },
-
   {
     name: 'TW台湾省',
-    regex:
-      /台湾|台灣|🇹🇼|tw|taiwan|tai wan/i,
-    filter:
-      '(?i)台湾|台灣|🇹🇼|tw|taiwan|tai wan',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Taiwan.png'
+    regex: /台湾|台灣|🇹🇼|tw|taiwan|tai wan/i,
+    filter: '(?i)台湾|台灣|🇹🇼|tw|taiwan|tai wan',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Taiwan.png'
   },
-
   {
     name: 'GB英国',
-    regex:
-      /英|🇬🇧|uk|united kingdom|great britain/i,
-    filter:
-      '(?i)英|🇬🇧|uk|united kingdom|great britain',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_Kingdom.png'
+    regex: /英|🇬🇧|uk|united kingdom|great britain/i,
+    filter: '(?i)英|🇬🇧|uk|united kingdom|great britain',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_Kingdom.png'
   },
-
   {
     name: 'DE德国',
-    regex:
-      /德国|🇩🇪|de|germany/i,
-    filter:
-      '(?i)德国|🇩🇪|de|germany',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Germany.png'
+    regex: /德国|🇩🇪|de|germany/i,
+    filter: '(?i)德国|🇩🇪|de|germany',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Germany.png'
   },
-
   {
     name: 'MY马来西亚',
-    regex:
-      /马来|🇲🇾|my|malaysia/i,
-    filter:
-      '(?i)马来|🇲🇾|my|malaysia',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Malaysia.png'
+    regex: /马来|🇲🇾|my|malaysia/i,
+    filter: '(?i)马来|🇲🇾|my|malaysia',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Malaysia.png'
   },
-
   {
     name: 'TK土耳其',
-    regex:
-      /土耳其|🇹🇷|tk|turkey/i,
-    filter:
-      '(?i)土耳其|🇹🇷|tk|turkey',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Turkey.png'
+    regex: /土耳其|🇹🇷|tk|turkey/i,
+    filter: '(?i)土耳其|🇹🇷|tk|turkey',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Turkey.png'
   },
-
   {
     name: 'CA加拿大',
-    regex:
-      /加拿大|🇨🇦|ca|canada/i,
-    filter:
-      '(?i)加拿大|🇨🇦|ca|canada',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Canada.png'
+    regex: /加拿大|🇨🇦|ca|canada/i,
+    filter: '(?i)加拿大|🇨🇦|ca|canada',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Canada.png'
   },
-
   {
     name: 'AU澳大利亚',
-    regex:
-      /澳大利亚|🇦🇺|au|australia|sydney/i,
-    filter:
-      '(?i)澳大利亚|🇦🇺|au|australia|sydney',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Australia.png'
+    regex: /澳大利亚|🇦🇺|au|australia|sydney/i,
+    filter: '(?i)澳大利亚|🇦🇺|au|australia|sydney',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Australia.png'
   },
 ]
 
@@ -438,10 +395,8 @@ const ruleProviders = {
     ...ruleProviderCommon,
     behavior: 'classical',
     format: 'text',
-    url:
-      'https://github.com/DustinWin/ruleset_geodata/raw/refs/heads/mihomo-ruleset/applications.list',
-    path:
-      './ruleset/DustinWin/applications.list',
+    url: `${githubProxy}https://github.com/DustinWin/ruleset_geodata/raw/refs/heads/mihomo-ruleset/applications.list`,
+    path: './ruleset/DustinWin/applications.list',
   },
 }
 
@@ -449,20 +404,8 @@ const multiplierRegex =
   /(?:倍率[ :]*|(?:^|[\s\-_\[\]()])[xX✕✖⨉])\s*(\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)\s*(?:倍率|倍|[xX✕✖⨉](?:$|[\s\-_\[\]()]))/
 
 const adInfoKeywords = [
-  '导航网址',
-  '距离下次重置',
-  '剩余流量',
-  '套餐到期',
-  '网址导航',
-  '官网',
-  '订阅',
-  '到期',
-  '剩余',
-  '重置',
-  '流量',
-  '已用',
-  '总计',
-  '续费'
+  '导航网址', '距离下次重置', '剩余流量', '套餐到期', '网址导航', '官网',
+  '订阅', '到期', '剩余', '重置', '流量', '已用', '总计', '续费'
 ]
 
 const adInfoRegex =
@@ -472,32 +415,23 @@ function isAdInfoNode(name) {
   if (!name || typeof name !== 'string') {
     return false
   }
-
-  if (
-    adInfoKeywords.some((kw) =>
-      name.includes(kw)
-    )
-  ) {
+  if (adInfoKeywords.some((kw) => name.includes(kw))) {
     return true
   }
-
   if (adInfoRegex.test(name)) {
     return true
   }
-
   return false
 }
 
-// --- 2. 服务规则数据结构 ---
+// --- 2. 服务规则数据结构 (全量重构为 MRS) ---
 const serviceConfigs = [
   {
     key: 'ads',
     name: '广告过滤',
-    icon:
-      'https://raw.githubusercontent.com/Lanlan13-14/Icon-for-webui/main/block.png',
-
+    icon: 'https://raw.githubusercontent.com/Lanlan13-14/Icon-for-webui/main/block.png',
     rules: [
-      'GEOSITE,category-ads-all,广告过滤',
+      'RULE-SET,category-ads-all_mrs,广告过滤',
       'RULE-SET,adblockmihomo,广告过滤',
       'DOMAIN-SUFFIX,ad.ldmnq.com,广告过滤',
       'DOMAIN-SUFFIX,ads.ldmnq.com,广告过滤',
@@ -506,73 +440,110 @@ const serviceConfigs = [
       'DOMAIN-SUFFIX,log.ldmnq.cn,广告过滤',
       'DOMAIN-SUFFIX,mnqlog.ldmnq.com,广告过滤',
     ],
-
     providers: [
       {
+        key: 'category-ads-all_mrs',
+        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ads-all.mrs`,
+        path: './ruleset/metacubex/category-ads-all.mrs',
+        format: 'mrs',
+        behavior: 'domain'
+      },
+      {
         key: 'adblockmihomo',
-        url:
-          'https://github.com/217heidai/adblockfilters/raw/refs/heads/main/rules/adblockmihomo.mrs',
-        path:
-          './ruleset/adblockfilters/adblockmihomo.mrs',
+        url: `${githubProxy}https://github.com/217heidai/adblockfilters/raw/refs/heads/main/rules/adblockmihomo.mrs`,
+        path: './ruleset/adblockfilters/adblockmihomo.mrs',
         format: 'mrs',
         behavior: 'domain'
       },
     ],
-
     reject: true,
   },
 
   {
     key: 'github',
     name: 'Github',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/GitHub.png',
-    url:
-      'https://github.com/robots.txt',
-
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/GitHub.png',
+    url: 'https://github.com/robots.txt',
     rules: [
-      'GEOSITE,github,Github'
+      'RULE-SET,github_mrs,Github'
+    ],
+    providers: [
+      {
+        key: 'github_mrs',
+        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/github.mrs`,
+        path: './ruleset/metacubex/github.mrs',
+        format: 'mrs',
+        behavior: 'domain'
+      }
     ]
   },
 
   {
     key: 'microsoft',
     name: '微软服务',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Microsoft.png',
-    url:
-      'https://www.msftconnecttest.com/connecttest.txt',
-
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Microsoft.png',
+    url: 'https://www.msftconnecttest.com/connecttest.txt',
     rules: [
-      'GEOSITE,microsoft@cn,国内网站',
-      'GEOSITE,microsoft,微软服务'
+      'RULE-SET,microsoft_cn_mrs,国内网站',
+      'RULE-SET,microsoft_mrs,微软服务'
+    ],
+    providers: [
+      {
+        key: 'microsoft_cn_mrs',
+        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/microsoft@cn.mrs`,
+        path: './ruleset/metacubex/microsoft_cn.mrs',
+        format: 'mrs',
+        behavior: 'domain'
+      },
+      {
+        key: 'microsoft_mrs',
+        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/microsoft.mrs`,
+        path: './ruleset/metacubex/microsoft.mrs',
+        format: 'mrs',
+        behavior: 'domain'
+      }
     ]
   },
 
   {
     key: 'openai',
     name: '国外AI',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/AI.png',
-    url:
-      'https://chat.openai.com/cdn-cgi/trace',
-
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/AI.png',
+    url: 'https://chat.openai.com/cdn-cgi/trace',
     rules: [
       'RULE-SET,ai_rules,国外AI',
-      'GEOSITE,jetbrains-ai,国外AI',
-      'GEOSITE,category-ai-!cn,国外AI',
-      'GEOSITE,category-ai-chat-!cn,国外AI'
+      'RULE-SET,jetbrains-ai_mrs,国外AI',
+      'RULE-SET,category-ai-not-cn_mrs,国外AI',
+      'RULE-SET,category-ai-chat-not-cn_mrs,国外AI'
     ],
-
     providers: [
       {
         key: 'ai_rules',
-        url:
-          'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/OpenAI/OpenAI.yaml',
-        path:
-          './ruleset/blackmatrix7/openai.yaml',
+        url: `${githubProxy}https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/OpenAI/OpenAI.yaml`,
+        path: './ruleset/blackmatrix7/openai.yaml',
         format: 'yaml',
         behavior: 'classical'
+      },
+      {
+        key: 'jetbrains-ai_mrs',
+        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/jetbrains-ai.mrs`,
+        path: './ruleset/metacubex/jetbrains-ai.mrs',
+        format: 'mrs',
+        behavior: 'domain'
+      },
+      {
+        key: 'category-ai-not-cn_mrs',
+        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ai-!cn.mrs`,
+        path: './ruleset/metacubex/category-ai-not-cn.mrs',
+        format: 'mrs',
+        behavior: 'domain'
+      },
+      {
+        key: 'category-ai-chat-not-cn_mrs',
+        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ai-chat-!cn.mrs`,
+        path: './ruleset/metacubex/category-ai-chat-not-cn.mrs',
+        format: 'mrs',
+        behavior: 'domain'
       }
     ]
   },
@@ -580,22 +551,16 @@ const serviceConfigs = [
   {
     key: 'crypto',
     name: '虚拟货币',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Cryptocurrency.png',
-    url:
-      'https://www.binance.com/robots.txt',
-
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Cryptocurrency.png',
+    url: 'https://www.binance.com/robots.txt',
     rules: [
       'RULE-SET,crypto_rules,虚拟货币'
     ],
-
     providers: [
       {
         key: 'crypto_rules',
-        url:
-          'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Cryptocurrency/Cryptocurrency.yaml',
-        path:
-          './ruleset/blackmatrix7/cryptocurrency.yaml',
+        url: `${githubProxy}https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Cryptocurrency/Cryptocurrency.yaml`,
+        path: './ruleset/blackmatrix7/cryptocurrency.yaml',
         format: 'yaml',
         behavior: 'classical'
       }
@@ -605,181 +570,273 @@ const serviceConfigs = [
   {
     key: 'apple',
     name: '苹果服务',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Apple.png',
-    url:
-      'https://www.apple.com/library/test/success.html',
-
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Apple.png',
+    url: 'https://www.apple.com/library/test/success.html',
     rules: [
-      'GEOSITE,apple-cn,苹果服务'
+      'RULE-SET,apple-cn_mrs,苹果服务'
+    ],
+    providers: [
+      {
+        key: 'apple-cn_mrs',
+        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/apple-cn.mrs`,
+        path: './ruleset/metacubex/apple-cn.mrs',
+        format: 'mrs',
+        behavior: 'domain'
+      }
     ]
   },
 
   {
     key: 'google',
     name: '谷歌服务',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Google_Search.png',
-    url:
-      'https://www.google.com/generate_204',
-
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Google_Search.png',
+    url: 'https://www.google.com/generate_204',
     rules: [
-      'GEOSITE,google,谷歌服务'
+      'RULE-SET,google_mrs,谷歌服务'
+    ],
+    providers: [
+      {
+        key: 'google_mrs',
+        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/google.mrs`,
+        path: './ruleset/metacubex/google.mrs',
+        format: 'mrs',
+        behavior: 'domain'
+      }
     ]
   },
 
   {
     key: 'youtube',
     name: 'YouTube',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/YouTube.png',
-    url:
-      'https://www.youtube.com/s/desktop/494dd881/img/favicon.ico',
-
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/YouTube.png',
+    url: 'https://www.youtube.com/s/desktop/494dd881/img/favicon.ico',
     rules: [
-      'GEOSITE,youtube,YouTube'
+      'RULE-SET,youtube_mrs,YouTube'
+    ],
+    providers: [
+      {
+        key: 'youtube_mrs',
+        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/youtube.mrs`,
+        path: './ruleset/metacubex/youtube.mrs',
+        format: 'mrs',
+        behavior: 'domain'
+      }
     ]
   },
 
   {
     key: 'bahamut',
     name: '巴哈姆特',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Bahamut.png',
-    url:
-      'https://ani.gamer.com.tw/ajax/getdeviceid.php',
-
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Bahamut.png',
+    url: 'https://ani.gamer.com.tw/ajax/getdeviceid.php',
     rules: [
-      'GEOSITE,bahamut,巴哈姆特'
+      'RULE-SET,bahamut_mrs,巴哈姆特'
+    ],
+    providers: [
+      {
+        key: 'bahamut_mrs',
+        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/bahamut.mrs`,
+        path: './ruleset/metacubex/bahamut.mrs',
+        format: 'mrs',
+        behavior: 'domain'
+      }
     ]
   },
 
   {
     key: 'disney',
     name: 'Disney+',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Disney.png',
-    url:
-      'https://disney.api.edge.bamgrid.com/devices',
-
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Disney.png',
+    url: 'https://disney.api.edge.bamgrid.com/devices',
     rules: [
-      'GEOSITE,disney,Disney+'
+      'RULE-SET,disney_mrs,Disney+'
+    ],
+    providers: [
+      {
+        key: 'disney_mrs',
+        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/disney.mrs`,
+        path: './ruleset/metacubex/disney.mrs',
+        format: 'mrs',
+        behavior: 'domain'
+      }
     ]
   },
 
   {
     key: 'netflix',
     name: 'NETFLIX',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Netflix_Letter.png',
-    url:
-      'https://api.fast.com/netflix/speedtest/v2?https=true',
-
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Netflix_Letter.png',
+    url: 'https://api.fast.com/netflix/speedtest/v2?https=true',
     rules: [
-      'GEOSITE,netflix,NETFLIX'
+      'RULE-SET,netflix_mrs,NETFLIX'
+    ],
+    providers: [
+      {
+        key: 'netflix_mrs',
+        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/netflix.mrs`,
+        path: './ruleset/metacubex/netflix.mrs',
+        format: 'mrs',
+        behavior: 'domain'
+      }
     ]
   },
 
   {
     key: 'tiktok',
     name: 'Tiktok',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/TikTok.png',
-    url:
-      'https://www.tiktok.com/',
-
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/TikTok.png',
+    url: 'https://www.tiktok.com/',
     rules: [
-      'GEOSITE,tiktok,Tiktok'
+      'RULE-SET,tiktok_mrs,Tiktok'
+    ],
+    providers: [
+      {
+        key: 'tiktok_mrs',
+        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/tiktok.mrs`,
+        path: './ruleset/metacubex/tiktok.mrs',
+        format: 'mrs',
+        behavior: 'domain'
+      }
     ]
   },
 
   {
     key: 'spotify',
     name: 'Spotify',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Spotify.png',
-    url:
-      'https://spclient.wg.spotify.com/signup/public/v1/account',
-
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Spotify.png',
+    url: 'https://spclient.wg.spotify.com/signup/public/v1/account',
     rules: [
-      'GEOSITE,spotify,Spotify'
+      'RULE-SET,spotify_mrs,Spotify'
+    ],
+    providers: [
+      {
+        key: 'spotify_mrs',
+        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/spotify.mrs`,
+        path: './ruleset/metacubex/spotify.mrs',
+        format: 'mrs',
+        behavior: 'domain'
+      }
     ]
   },
 
   {
     key: 'hbo',
     name: 'HBO',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/HBO.png',
-    url:
-      'https://www.hbo.com/favicon.ico',
-
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/HBO.png',
+    url: 'https://www.hbo.com/favicon.ico',
     rules: [
-      'GEOSITE,hbo,HBO'
+      'RULE-SET,hbo_mrs,HBO'
+    ],
+    providers: [
+      {
+        key: 'hbo_mrs',
+        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/hbo.mrs`,
+        path: './ruleset/metacubex/hbo.mrs',
+        format: 'mrs',
+        behavior: 'domain'
+      }
     ]
   },
 
   {
     key: 'primevideo',
     name: 'Prime Video',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Prime_Video.png',
-    url:
-      'https://m.media-amazon.com/images/G/01/digital/video/web/logo-min-remaster.png',
-
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Prime_Video.png',
+    url: 'https://m.media-amazon.com/images/G/01/digital/video/web/logo-min-remaster.png',
     rules: [
-      'GEOSITE,primevideo,Prime Video'
+      'RULE-SET,primevideo_mrs,Prime Video'
+    ],
+    providers: [
+      {
+        key: 'primevideo_mrs',
+        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/primevideo.mrs`,
+        path: './ruleset/metacubex/primevideo.mrs',
+        format: 'mrs',
+        behavior: 'domain'
+      }
     ]
   },
 
   {
     key: 'hulu',
     name: 'Hulu',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Hulu.png',
-    url:
-      'https://auth.hulu.com/v4/web/password/authenticate',
-
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Hulu.png',
+    url: 'https://auth.hulu.com/v4/web/password/authenticate',
     rules: [
-      'GEOSITE,hulu,Hulu'
+      'RULE-SET,hulu_mrs,Hulu'
+    ],
+    providers: [
+      {
+        key: 'hulu_mrs',
+        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/hulu.mrs`,
+        path: './ruleset/metacubex/hulu.mrs',
+        format: 'mrs',
+        behavior: 'domain'
+      }
     ]
   },
 
   {
     key: 'telegram',
     name: 'Telegram',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Telegram.png',
-    url:
-      'https://www.telegram.org/img/website_icon.svg',
-
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Telegram.png',
+    url: 'https://www.telegram.org/img/website_icon.svg',
     rules: [
-      'GEOIP,telegram,Telegram'
+      'RULE-SET,telegram_mrs,Telegram'
+    ],
+    providers: [
+      {
+        key: 'telegram_mrs',
+        url: `${githubProxy}https://github.com/DustinWin/ruleset_geodata/raw/refs/heads/mihomo-ruleset/telegram.mrs`,
+        path: './ruleset/dustinwin/telegram.mrs',
+        format: 'mrs',
+        behavior: 'classical'
+      }
     ]
   },
 
   {
     key: 'line',
     name: 'Line',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Line.png',
-    url:
-      'https://line.me/page-data/app-data.json',
-
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Line.png',
+    url: 'https://line.me/page-data/app-data.json',
     rules: [
-      'GEOSITE,line,Line'
+      'RULE-SET,line_mrs,Line'
+    ],
+    providers: [
+      {
+        key: 'line_mrs',
+        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/line.mrs`,
+        path: './ruleset/metacubex/line.mrs',
+        format: 'mrs',
+        behavior: 'domain'
+      }
     ]
   },
 
   {
     key: 'games',
     name: '游戏专用',
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Game.png',
-
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Game.png',
     rules: [
-      'GEOSITE,category-games@cn,国内网站',
-      'GEOSITE,category-games,游戏专用'
+      'RULE-SET,category-games-cn_mrs,国内网站',
+      'RULE-SET,category-games_mrs,游戏专用'
+    ],
+    providers: [
+      {
+        key: 'category-games-cn_mrs',
+        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-games@cn.mrs`,
+        path: './ruleset/metacubex/category-games-cn.mrs',
+        format: 'mrs',
+        behavior: 'domain'
+      },
+      {
+        key: 'category-games_mrs',
+        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-games.mrs`,
+        path: './ruleset/metacubex/category-games.mrs',
+        format: 'mrs',
+        behavior: 'domain'
+      }
     ]
   },
 ]
@@ -1602,22 +1659,16 @@ function main(config) {
   )
 
   // ==========================================
-  // 3.6 通用兜底策略组
+  // 3.6 通用兜底策略组 (此部分保留基于 GeoData，性能更优)
   // ==========================================
 
   rules.push(
     'GEOSITE,private,直连',
-
     'GEOSITE,category-public-tracker,直连',
-
     'GEOSITE,category-game-platforms-download@cn,直连',
-
     'GEOIP,private,直连,no-resolve',
-
     'GEOSITE,cn,国内网站',
-
     'GEOIP,cn,国内网站,no-resolve',
-
     'MATCH,其他外网'
   )
 
