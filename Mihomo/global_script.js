@@ -544,17 +544,33 @@ function main(config) {
         svc._isStrictRegion = false
 
       } else if (svc.key === 'crypto') {
-        // ==========================================
-        // 💰 虚拟货币
-        // ==========================================
-        //
-        // 保持原有结构，不增加国家/地区列表
-        //
-        groupProxies = enablePrimaryNode
-          ? ['默认节点', '备用节点', '主节点', '直连']
-          : ['默认节点', '备用节点', '直连']
+  // ========================================
+  // 💰 虚拟货币
+  // ========================================
+  // 与“国外AI”完全一致：
+  // 默认节点
+  // 备用节点
+  // 主节点（可通过 enablePrimaryNode 控制）
+  // 各个国家/地区
+  // 其他节点
+  // 直连
 
-        svc._isStrictRegion = false
+  groupProxies = enablePrimaryNode
+    ? [
+        '默认节点',
+        '备用节点',
+        '主节点',
+        ...regionGroupNames,
+        '直连'
+      ]
+    : [
+        '默认节点',
+        '备用节点',
+        ...regionGroupNames,
+        '直连'
+      ]
+
+  svc._isStrictRegion = false
 
       } else {
         groupProxies = ['默认节点', ...regionGroupNames, '直连']
