@@ -187,7 +187,6 @@ const dnsConfig = {
     'geosite:gfw,jetbrains-ai,category-ai-!cn,category-ai-chat-!cn': foreignDNS, 
   },
 }
-
 const ruleProviderCommon = { type: 'http', format: 'yaml', interval: 86400 }
 
 // 动态引用上方的测速变量
@@ -357,7 +356,7 @@ function main(config) {
           type: cfg.type || 'http',
           url: cfg.url,
           interval: cfg.interval || 86400,
-          'health-check': { enable: true, url: 'https://www.gstatic.com/generate_204', interval: checkInterval }, // Provider应用测速变量
+          'health-check': { enable: true, url: 'https://www.gstatic.com/generate_204', interval: checkInterval },
         }
         if (cfg.override && cfg.override['additional-prefix']) {
           provider.override = { 'additional-prefix': cfg.override['additional-prefix'] }
@@ -415,7 +414,6 @@ function main(config) {
       generatedRegionGroups.push(group)
     }
   })
-
   if (otherProxies.length > 0 || hasProviders) {
     const otherGroup = { ...groupBaseOption, name: '其他节点', type: 'select', icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Global.png' }
     if (otherProxies.length > 0) otherGroup.proxies = otherProxies
@@ -439,93 +437,194 @@ function main(config) {
   const functionalGroups = []
 
   // 主节点：依据名称包含“自建”提取
-  // 开关关闭时，不创建“主节点”策略组。
+  // enablePrimaryNode = false 时完全不生成“主节点”分组
   const primaryProxies = allLocalProxyNames.filter(name => name.includes('自建'))
+
   if (enablePrimaryNode) {
     const primaryGroup = {
-      ...groupBaseOption, name: '主节点', type: 'url-test', tolerance: 50,
+      ...groupBaseOption,
+      name: '主节点',
+      type: 'url-test',
+      tolerance: 50,
       proxies: primaryProxies.length > 0 ? primaryProxies : ['直连'],
       icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_States.png',
     }
-    if (hasProviders) { primaryGroup.use = providerKeys; primaryGroup.filter = '自建' }
+
+    if (hasProviders) {
+      primaryGroup.use = providerKeys
+      primaryGroup.filter = '自建'
+    }
+
     functionalGroups.push(primaryGroup)
   }
 
   // 备用节点：排除自建，排除专线，且仅限于日本或新加坡节点，走延迟最低测速
   const backupProxies = allLocalProxyNames.filter(name => 
-    !name.includes('自建') && !name.includes('专线') && /日本|🇯🇵|jp|japan|新加坡|🇸🇬|sg|singapore/i.test(name)
+    !name.includes('自建') &&
+    !name.includes('专线') &&
+    /日本|🇯🇵|jp|japan|新加坡|🇸🇬|sg|singapore/i.test(name)
   )
+
   const backupGroup = {
-    ...groupBaseOption, name: '备用节点', type: 'url-test', tolerance: 50,
+    ...groupBaseOption,
+    name: '备用节点',
+    type: 'url-test',
+    tolerance: 50,
     proxies: backupProxies.length > 0 ? backupProxies : ['直连'],
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Japan.png',
   }
+
   if (hasProviders) {
     backupGroup.use = providerKeys
     backupGroup.filter = '(?i)日本|🇯🇵|jp|japan|新加坡|🇸🇬|sg|singapore'
     backupGroup['exclude-filter'] = '(?i)自建|专线'
   }
+
   functionalGroups.push(backupGroup)
 
   // Health Restore (自动恢复兜底组)
+  // 主节点关闭时，默认节点自动退化为仅使用备用节点
   const defaultNodeGroup = {
     ...groupBaseOption,
     name: '默认节点',
     type: 'fallback',
-    proxies: enablePrimaryNode ? ['主节点', '备用节点'] : ['备用节点'],
+    proxies: enablePrimaryNode
+      ? ['主节点', '备用节点']
+      : ['备用节点'],
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png',
   }
+
   functionalGroups.push(defaultNodeGroup)
 
   serviceConfigs.forEach((svc) => {
     if (ruleOptions[svc.key]) {
       rules.push(...svc.rules)
+
       if (Array.isArray(svc.providers)) {
-        svc.providers.forEach((p) => { ruleProviders[p.key] = { ...ruleProviderCommon, behavior: p.behavior, format: p.format, url: p.url, path: p.path } })
+        svc.providers.forEach((p) => {
+          ruleProviders[p.key] = {
+            ...ruleProviderCommon,
+            behavior: p.behavior,
+            format: p.format,
+            url: p.url,
+            path: p.path
+          }
+        })
       }
 
       let groupProxies
+
       if (svc.reject) {
         groupProxies = ['REJECT', '直连', '默认节点']
+
       } else if (svc.key === 'bahamut') {
         groupProxies = ['默认节点', ...regionGroupNames, '直连']
-      } else if (svc.key === 'openai' || svc.key === 'crypto') {
+
+      } else if (svc.key === 'openai') {
+        // ==========================================
+        // 🌐 国外AI
+        // ==========================================
+        //
+        // 保留：
+        //   默认节点
+        //   备用节点
+        //   主节点（enablePrimaryNode=true 时）
+        //   直连
+        //
+        // 新增：
+        //   所有已经实际生成的国家/地区策略组
+        //
+        // regionGroupNames 来自 generatedRegionGroups，
+        // 因此没有实际节点的国家不会显示。
+        //
+        groupProxies = enablePrimaryNode
+          ? ['默认节点', '备用节点', '主节点', ...regionGroupNames, '直连']
+          : ['默认节点', '备用节点', ...regionGroupNames, '直连']
+
+        svc._isStrictRegion = false
+
+      } else if (svc.key === 'crypto') {
+        // ==========================================
+        // 💰 虚拟货币
+        // ==========================================
+        //
+        // 保持原有结构，不增加国家/地区列表
+        //
         groupProxies = enablePrimaryNode
           ? ['默认节点', '备用节点', '主节点', '直连']
           : ['默认节点', '备用节点', '直连']
+
         svc._isStrictRegion = false
+
       } else {
         groupProxies = ['默认节点', ...regionGroupNames, '直连']
       }
 
-      const group = { ...groupBaseOption, name: svc.name, type: 'select', proxies: groupProxies, url: svc.url, icon: svc.icon }
+      const group = {
+        ...groupBaseOption,
+        name: svc.name,
+        type: 'select',
+        proxies: groupProxies,
+        url: svc.url,
+        icon: svc.icon
+      }
+
       if (hasProviders) {
         group.use = providerKeys
-        if (svc._isStrictRegion) group.filter = '(?i)港|🇭🇰|hk|hongkong|美|🇺🇸|us|usa|日本|🇯🇵|jp|japan|新加坡|🇸🇬|sg|singapore'
+
+        if (svc._isStrictRegion) {
+          group.filter = '(?i)港|🇭🇰|hk|hongkong|美|🇺🇸|us|usa|日本|🇯🇵|jp|japan|新加坡|🇸🇬|sg|singapore'
+        }
       }
+
       functionalGroups.push(group)
     }
   })
 
   // 3.6 通用兜底策略组
   rules.push(
-    'GEOSITE,private,直连', 'GEOSITE,category-public-tracker,直连', 'GEOSITE,category-game-platforms-download@cn,直连',
-    'GEOIP,private,直连,no-resolve', 'GEOSITE,cn,国内网站', 'GEOIP,cn,国内网站,no-resolve', 'MATCH,其他外网'
+    'GEOSITE,private,直连',
+    'GEOSITE,category-public-tracker,直连',
+    'GEOSITE,category-game-platforms-download@cn,直连',
+    'GEOIP,private,直连,no-resolve',
+    'GEOSITE,cn,国内网站',
+    'GEOIP,cn,国内网站,no-resolve',
+    'MATCH,其他外网'
   )
 
   const buildFixedGroup = (opts) => {
     const group = { ...groupBaseOption, ...opts }
-    if (hasProviders) group.use = providerKeys
+
+    if (hasProviders) {
+      group.use = providerKeys
+    }
+
     return group
   }
 
   functionalGroups.push(
-    buildFixedGroup({ name: '其他外网', type: 'select', proxies: ['默认节点', '国内网站', ...allLocalProxyNames], icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Dark/GlobalMedia.png' }),
-    buildFixedGroup({ name: '国内网站', type: 'select', proxies: ['直连', '默认节点', ...allLocalProxyNames], url: 'https://wifi.vivo.com.cn/generate_204', icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/China_Map.png' })
+    buildFixedGroup({
+      name: '其他外网',
+      type: 'select',
+      proxies: ['默认节点', '国内网站', ...allLocalProxyNames],
+      icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Dark/GlobalMedia.png'
+    }),
+
+    buildFixedGroup({
+      name: '国内网站',
+      type: 'select',
+      proxies: ['直连', '默认节点', ...allLocalProxyNames],
+      url: 'https://wifi.vivo.com.cn/generate_204',
+      icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/China_Map.png'
+    })
   )
 
   // 3.7 组装最终结果
-  config['proxy-groups'] = [...functionalGroups, ...generatedRegionGroups]
+  config['proxy-groups'] = [
+    ...functionalGroups,
+    ...generatedRegionGroups
+  ]
+
   config['rules'] = rules
   config['rule-providers'] = ruleProviders
 
