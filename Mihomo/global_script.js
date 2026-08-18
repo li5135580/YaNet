@@ -1,6 +1,6 @@
 /***
  * Clash Verge Rev / Mihomo Party 优化脚本
- * 优化点：严格参数配置 / 安全收口 / 自建主节点 / 日新备用节点(排除专线) / AI节点重构 / 全量 MRS 远程规则替换
+ * 优化点：严格参数配置 / 安全收口 / 自建主节点 / 日新备用节点(排除专线) / AI节点重构 / 全量 MRS 远程规则替换 / 增加AI中转
  */
 
 function stringToArray(val) {
@@ -173,6 +173,7 @@ let ruleOptions = {
   github: true,
   google: true,
   openai: true,
+  ai_relay: true, // 新增 AI中转 规则开关
   crypto: true,
   spotify: true,
   youtube: true,
@@ -499,6 +500,30 @@ const serviceConfigs = [
         key: 'microsoft_mrs',
         url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/microsoft.mrs`,
         path: './ruleset/metacubex/microsoft.mrs',
+        format: 'mrs',
+        behavior: 'domain'
+      }
+    ]
+  },
+  
+  // ========================================
+  // 🤖 新增：AI中转
+  // ========================================
+  {
+    key: 'ai_relay',
+    name: 'AI中转',
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Server.png',
+    url: 'https://larprouter.com/',
+    rules: [
+      'DOMAIN-SUFFIX,larprouter.com,AI中转',
+      'RULE-SET,ai_relay_mrs,AI中转'
+    ],
+    providers: [
+      {
+        key: 'ai_relay_mrs',
+        // 中转站名单占位符，待后续有实际地址后替换
+        url: `${githubProxy}https://raw.githubusercontent.com/placeholder/rules/main/ai_relay.mrs`,
+        path: './ruleset/custom/ai_relay.mrs',
         format: 'mrs',
         behavior: 'domain'
       }
@@ -1511,7 +1536,7 @@ function main(config) {
         ]
 
       // ========================================
-      // 🌐 国外AI
+      // 🌐 国外AI / 💰 虚拟货币 / 🤖 AI中转
       // ========================================
       //
       // 主节点开启：
@@ -1521,88 +1546,17 @@ function main(config) {
       // 主节点
       // HK香港
       // US美国
-      // JP日本
-      // KR韩国
-      // SG新加坡
-      // TW台湾省
-      // GB英国
-      // DE德国
-      // MY马来西亚
-      // TK土耳其
-      // CA加拿大
-      // AU澳大利亚
+      // ...各个存在的地区...
       // 其他节点
       // 直连
       //
-      // 注意：
-      // regionGroupNames 只包含实际生成的地区组
-      // 没有节点的地区不会被加入
+      // ★ 必须加入 ...regionGroupNames 确保包含所有国家和地区节点
       // ========================================
 
       } else if (
-        svc.key ===
-        'openai'
-      ) {
-        groupProxies =
-          enablePrimaryNode
-            ? [
-                '默认节点',
-                '备用节点',
-                '主节点',
-                ...regionGroupNames,
-                '直连'
-              ]
-            : [
-                '默认节点',
-                '备用节点',
-                ...regionGroupNames,
-                '直连'
-              ]
-
-        svc._isStrictRegion =
-          false
-
-      // ========================================
-      // 💰 虚拟货币
-      // ========================================
-      //
-      // 与“国外AI”完全一致
-      //
-      // 主节点开启：
-      //
-      // 默认节点
-      // 备用节点
-      // 主节点
-      // HK香港
-      // US美国
-      // JP日本
-      // KR韩国
-      // SG新加坡
-      // TW台湾省
-      // GB英国
-      // DE德国
-      // MY马来西亚
-      // TK土耳其
-      // CA加拿大
-      // AU澳大利亚
-      // 其他节点
-      // 直连
-      //
-      // 主节点关闭：
-      //
-      // 默认节点
-      // 备用节点
-      // 各国家/地区
-      // 其他节点
-      // 直连
-      //
-      // ★ 这里是本次修改的重点
-      // ★ 必须加入 ...regionGroupNames
-      // ========================================
-
-      } else if (
-        svc.key ===
-        'crypto'
+        svc.key === 'openai' ||
+        svc.key === 'crypto' ||
+        svc.key === 'ai_relay'
       ) {
         groupProxies =
           enablePrimaryNode
