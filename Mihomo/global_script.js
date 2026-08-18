@@ -513,9 +513,9 @@ const serviceConfigs = [
     key: 'ai_relay',
     name: 'AI中转',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Server.png',
-    url: 'https://larprouter.com/',
+    url: 'https://www.gstatic.com/generate_204', // 恢复默认测速地址，保证正常延迟
     rules: [
-      'DOMAIN-SUFFIX,larprouter.com,AI中转',
+      'DOMAIN-SUFFIX,larprouter.com,AI中转', // 指定目标域名走此分组
       'RULE-SET,ai_relay_mrs,AI中转'
     ],
     providers: [
@@ -1598,8 +1598,12 @@ function main(config) {
         proxies:
           groupProxies,
 
-        url: svc.url,
         icon: svc.icon
+      }
+      
+      // 当存在服务自定义url时才覆盖，否则使用 groupBaseOption 的默认测速链接
+      if (svc.url) {
+        group.url = svc.url
       }
 
       if (hasProviders) {
