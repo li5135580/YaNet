@@ -443,9 +443,16 @@ const serviceConfigs = [
     ],
     providers: [
       {
-        key: 'awavenue_ads_mrs',
-        url: 'https://gcore.jsdelivr.net/gh/TG-Twilight/AWAvenue-Ads-Rule@main/Filters/AWAvenue-Ads-Rule-Mihomo.mrs',
-        path: './ruleset/awavenue/awavenue_ads.mrs',
+        key: 'awavenue_ads_yaml',
+        url: 'https://gcore.jsdelivr.net/gh/TG-Twilight/AWAvenue-Ads-Rule@main/Filters/AWAvenue-Ads-Rule-Clash.yaml',
+        path: './ruleset/awavenue/awavenue_ads.yaml',
+        format: 'yaml',
+        behavior: 'classical'
+      },
+      {
+        key: 'category-ads-all_mrs',
+        url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-ads-all.mrs`,
+        path: './ruleset/metacubex/category-ads-all.mrs',
         format: 'mrs',
         behavior: 'domain'
       },
