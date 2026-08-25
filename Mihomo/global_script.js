@@ -1,6 +1,6 @@
 /***
  * Clash Verge Rev / Mihomo Party 优化脚本
- * 优化点：严格参数配置 / 安全收口 / 自建主节点 / 日新备用节点(排除专线) / AI节点重构 / 全量 MRS 远程规则替换 / 增加AI中转
+ * 优化点：严格参数配置 / 安全收口 / 自建主节点 / 日新备用节点(排除专线) / AI节点重构 / 全量 MRS 远程规则替换 / 增加AI中转 / AWAvenue 广告过滤
  */
 
 function stringToArray(val) {
@@ -173,7 +173,7 @@ let ruleOptions = {
   github: true,
   google: true,
   openai: true,
-  ai_relay: true, // 新增 AI中转 规则开关
+  ai_relay: true,
   crypto: true,
   spotify: true,
   youtube: true,
@@ -433,7 +433,7 @@ const serviceConfigs = [
     icon: 'https://raw.githubusercontent.com/Lanlan13-14/Icon-for-webui/main/block.png',
     rules: [
       'RULE-SET,category-ads-all_mrs,广告过滤',
-      'RULE-SET,adblockmihomo,广告过滤',
+      'RULE-SET,awavenue_ads_mrs,广告过滤',
       'DOMAIN-SUFFIX,ad.ldmnq.com,广告过滤',
       'DOMAIN-SUFFIX,ads.ldmnq.com,广告过滤',
       'DOMAIN-SUFFIX,push.ldmnq.com,广告过滤',
@@ -443,16 +443,9 @@ const serviceConfigs = [
     ],
     providers: [
       {
-        key: 'category-ads-all_mrs',
-        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ads-all.mrs`,
-        path: './ruleset/metacubex/category-ads-all.mrs',
-        format: 'mrs',
-        behavior: 'domain'
-      },
-      {
-        key: 'adblockmihomo',
-        url: `${githubProxy}https://github.com/217heidai/adblockfilters/raw/refs/heads/main/rules/adblockmihomo.mrs`,
-        path: './ruleset/adblockfilters/adblockmihomo.mrs',
+        key: 'awavenue_ads_mrs',
+        url: 'https://gcore.jsdelivr.net/gh/TG-Twilight/AWAvenue-Ads-Rule@main/Filters/AWAvenue-Ads-Rule-Mihomo.mrs',
+        path: './ruleset/awavenue/awavenue_ads.mrs',
         format: 'mrs',
         behavior: 'domain'
       },
@@ -471,7 +464,7 @@ const serviceConfigs = [
     providers: [
       {
         key: 'github_mrs',
-        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/github.mrs`,
+        url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/github.mrs`,
         path: './ruleset/metacubex/github.mrs',
         format: 'mrs',
         behavior: 'domain'
@@ -491,14 +484,14 @@ const serviceConfigs = [
     providers: [
       {
         key: 'microsoft_cn_mrs',
-        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/microsoft@cn.mrs`,
+        url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/microsoft@cn.mrs`,
         path: './ruleset/metacubex/microsoft_cn.mrs',
         format: 'mrs',
         behavior: 'domain'
       },
       {
         key: 'microsoft_mrs',
-        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/microsoft.mrs`,
+        url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/microsoft.mrs`,
         path: './ruleset/metacubex/microsoft.mrs',
         format: 'mrs',
         behavior: 'domain'
@@ -507,21 +500,20 @@ const serviceConfigs = [
   },
   
   // ========================================
-  // 🤖 新增：AI中转
+  // 🤖 AI中转
   // ========================================
   {
     key: 'ai_relay',
     name: 'AI中转',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Server.png',
-    url: 'https://www.gstatic.com/generate_204', // 恢复默认测速地址，保证正常延迟
+    url: 'https://www.gstatic.com/generate_204',
     rules: [
-      'DOMAIN-SUFFIX,larprouter.com,AI中转', // 指定目标域名走此分组
+      'DOMAIN-SUFFIX,larprouter.com,AI中转',
       'RULE-SET,ai_relay_mrs,AI中转'
     ],
     providers: [
       {
         key: 'ai_relay_mrs',
-        // 中转站名单占位符，待后续有实际地址后替换
         url: `${githubProxy}https://raw.githubusercontent.com/placeholder/rules/main/ai_relay.mrs`,
         path: './ruleset/custom/ai_relay.mrs',
         format: 'mrs',
@@ -551,21 +543,21 @@ const serviceConfigs = [
       },
       {
         key: 'jetbrains-ai_mrs',
-        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/jetbrains-ai.mrs`,
+        url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/jetbrains-ai.mrs`,
         path: './ruleset/metacubex/jetbrains-ai.mrs',
         format: 'mrs',
         behavior: 'domain'
       },
       {
         key: 'category-ai-not-cn_mrs',
-        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ai-!cn.mrs`,
+        url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-ai-!cn.mrs`,
         path: './ruleset/metacubex/category-ai-not-cn.mrs',
         format: 'mrs',
         behavior: 'domain'
       },
       {
         key: 'category-ai-chat-not-cn_mrs',
-        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ai-chat-!cn.mrs`,
+        url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-ai-chat-!cn.mrs`,
         path: './ruleset/metacubex/category-ai-chat-not-cn.mrs',
         format: 'mrs',
         behavior: 'domain'
@@ -603,7 +595,7 @@ const serviceConfigs = [
     providers: [
       {
         key: 'apple-cn_mrs',
-        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/apple-cn.mrs`,
+        url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/apple-cn.mrs`,
         path: './ruleset/metacubex/apple-cn.mrs',
         format: 'mrs',
         behavior: 'domain'
@@ -622,7 +614,7 @@ const serviceConfigs = [
     providers: [
       {
         key: 'google_mrs',
-        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/google.mrs`,
+        url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/google.mrs`,
         path: './ruleset/metacubex/google.mrs',
         format: 'mrs',
         behavior: 'domain'
@@ -641,7 +633,7 @@ const serviceConfigs = [
     providers: [
       {
         key: 'youtube_mrs',
-        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/youtube.mrs`,
+        url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/youtube.mrs`,
         path: './ruleset/metacubex/youtube.mrs',
         format: 'mrs',
         behavior: 'domain'
@@ -660,7 +652,7 @@ const serviceConfigs = [
     providers: [
       {
         key: 'bahamut_mrs',
-        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/bahamut.mrs`,
+        url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/bahamut.mrs`,
         path: './ruleset/metacubex/bahamut.mrs',
         format: 'mrs',
         behavior: 'domain'
@@ -679,7 +671,7 @@ const serviceConfigs = [
     providers: [
       {
         key: 'disney_mrs',
-        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/disney.mrs`,
+        url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/disney.mrs`,
         path: './ruleset/metacubex/disney.mrs',
         format: 'mrs',
         behavior: 'domain'
@@ -698,7 +690,7 @@ const serviceConfigs = [
     providers: [
       {
         key: 'netflix_mrs',
-        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/netflix.mrs`,
+        url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/netflix.mrs`,
         path: './ruleset/metacubex/netflix.mrs',
         format: 'mrs',
         behavior: 'domain'
@@ -717,7 +709,7 @@ const serviceConfigs = [
     providers: [
       {
         key: 'tiktok_mrs',
-        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/tiktok.mrs`,
+        url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/tiktok.mrs`,
         path: './ruleset/metacubex/tiktok.mrs',
         format: 'mrs',
         behavior: 'domain'
@@ -736,7 +728,7 @@ const serviceConfigs = [
     providers: [
       {
         key: 'spotify_mrs',
-        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/spotify.mrs`,
+        url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/spotify.mrs`,
         path: './ruleset/metacubex/spotify.mrs',
         format: 'mrs',
         behavior: 'domain'
@@ -755,7 +747,7 @@ const serviceConfigs = [
     providers: [
       {
         key: 'hbo_mrs',
-        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/hbo.mrs`,
+        url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/hbo.mrs`,
         path: './ruleset/metacubex/hbo.mrs',
         format: 'mrs',
         behavior: 'domain'
@@ -774,7 +766,7 @@ const serviceConfigs = [
     providers: [
       {
         key: 'primevideo_mrs',
-        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/primevideo.mrs`,
+        url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/primevideo.mrs`,
         path: './ruleset/metacubex/primevideo.mrs',
         format: 'mrs',
         behavior: 'domain'
@@ -793,7 +785,7 @@ const serviceConfigs = [
     providers: [
       {
         key: 'hulu_mrs',
-        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/hulu.mrs`,
+        url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/hulu.mrs`,
         path: './ruleset/metacubex/hulu.mrs',
         format: 'mrs',
         behavior: 'domain'
@@ -801,7 +793,7 @@ const serviceConfigs = [
     ]
   },
 
-{
+  {
     key: 'telegram',
     name: 'Telegram',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Telegram.png',
@@ -839,7 +831,7 @@ const serviceConfigs = [
     providers: [
       {
         key: 'line_mrs',
-        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/line.mrs`,
+        url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/line.mrs`,
         path: './ruleset/metacubex/line.mrs',
         format: 'mrs',
         behavior: 'domain'
@@ -858,14 +850,14 @@ const serviceConfigs = [
     providers: [
       {
         key: 'category-games-cn_mrs',
-        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-games@cn.mrs`,
+        url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-games@cn.mrs`,
         path: './ruleset/metacubex/category-games-cn.mrs',
         format: 'mrs',
         behavior: 'domain'
       },
       {
         key: 'category-games_mrs',
-        url: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-games.mrs`,
+        url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-games.mrs`,
         path: './ruleset/metacubex/category-games.mrs',
         format: 'mrs',
         behavior: 'domain'
@@ -1281,10 +1273,7 @@ function main(config) {
   }
 
   // ==========================================
-  // 这里就是所有已经实际生成的
-  // 国家/地区策略组名称
-  //
-  // AI 和虚拟货币都会使用它
+  // 实际生成的国家/地区策略组名称
   // ==========================================
 
   const regionGroupNames =
@@ -1321,14 +1310,7 @@ function main(config) {
 
   const functionalGroups = []
 
-  // ==========================================
   // 🚀 主节点
-  // ==========================================
-  //
-  // 只有 enablePrimaryNode = true
-  // 才创建这个策略组
-  // ==========================================
-
   const primaryProxies =
     allLocalProxyNames.filter(
       (name) =>
@@ -1365,19 +1347,7 @@ function main(config) {
     )
   }
 
-  // ==========================================
   // 🚀 备用节点
-  // ==========================================
-  //
-  // 排除：
-  // 1. 自建
-  // 2. 专线
-  //
-  // 仅限：
-  // 1. 日本
-  // 2. 新加坡
-  // ==========================================
-
   const backupProxies =
     allLocalProxyNames.filter(
       (name) =>
@@ -1421,25 +1391,7 @@ function main(config) {
     backupGroup
   )
 
-  // ==========================================
   // 🚀 默认节点
-  // ==========================================
-  //
-  // 主节点开启：
-  //
-  // 默认节点
-  // ├── 主节点
-  // └── 备用节点
-  //
-  // 主节点关闭：
-  //
-  // 默认节点
-  // └── 备用节点
-  //
-  // 防止：
-  // proxy group: '主节点' not found
-  // ==========================================
-
   const defaultNodeGroup = {
     ...groupBaseOption,
 
@@ -1464,10 +1416,7 @@ function main(config) {
     defaultNodeGroup
   )
 
-  // ==========================================
   // 🚀 服务策略组
-  // ==========================================
-
   serviceConfigs.forEach(
     (svc) => {
       if (
@@ -1510,21 +1459,12 @@ function main(config) {
 
       let groupProxies
 
-      // ========================================
-      // 广告过滤
-      // ========================================
-
       if (svc.reject) {
         groupProxies = [
           'REJECT',
           '直连',
           '默认节点'
         ]
-
-      // ========================================
-      // 巴哈姆特
-      // ========================================
-
       } else if (
         svc.key ===
         'bahamut'
@@ -1534,25 +1474,6 @@ function main(config) {
           ...regionGroupNames,
           '直连'
         ]
-
-      // ========================================
-      // 🌐 国外AI / 💰 虚拟货币 / 🤖 AI中转
-      // ========================================
-      //
-      // 主节点开启：
-      //
-      // 默认节点
-      // 备用节点
-      // 主节点
-      // HK香港
-      // US美国
-      // ...各个存在的地区...
-      // 其他节点
-      // 直连
-      //
-      // ★ 必须加入 ...regionGroupNames 确保包含所有国家和地区节点
-      // ========================================
-
       } else if (
         svc.key === 'openai' ||
         svc.key === 'crypto' ||
@@ -1576,11 +1497,6 @@ function main(config) {
 
         svc._isStrictRegion =
           false
-
-      // ========================================
-      // 其他服务
-      // ========================================
-
       } else {
         groupProxies = [
           '默认节点',
@@ -1601,7 +1517,6 @@ function main(config) {
         icon: svc.icon
       }
       
-      // 当存在服务自定义url时才覆盖，否则使用 groupBaseOption 的默认测速链接
       if (svc.url) {
         group.url = svc.url
       }
@@ -1625,7 +1540,7 @@ function main(config) {
   )
 
   // ==========================================
-  // 3.6 通用兜底策略组 (此部分保留基于 GeoData，性能更优)
+  // 3.6 通用兜底策略组
   // ==========================================
 
   rules.push(
@@ -1654,11 +1569,6 @@ function main(config) {
     }
 
   functionalGroups.push(
-
-    // ========================================
-    // 其他外网
-    // ========================================
-
     buildFixedGroup({
       name: '其他外网',
       type: 'select',
@@ -1672,10 +1582,6 @@ function main(config) {
       icon:
         'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Dark/GlobalMedia.png'
     }),
-
-    // ========================================
-    // 国内网站
-    // ========================================
 
     buildFixedGroup({
       name: '国内网站',
