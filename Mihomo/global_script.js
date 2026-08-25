@@ -433,7 +433,7 @@ const serviceConfigs = [
     icon: 'https://raw.githubusercontent.com/Lanlan13-14/Icon-for-webui/main/block.png',
     rules: [
       'RULE-SET,category-ads-all_mrs,广告过滤',
-      'RULE-SET,awavenue_ads_mrs,广告过滤',
+      'RULE-SET,awavenue_ads_yaml,广告过滤',
       'DOMAIN-SUFFIX,ad.ldmnq.com,广告过滤',
       'DOMAIN-SUFFIX,ads.ldmnq.com,广告过滤',
       'DOMAIN-SUFFIX,push.ldmnq.com,广告过滤',
