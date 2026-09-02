@@ -1,6 +1,6 @@
 /***
  * Clash Verge Rev / Mihomo Party 优化脚本
- * 优化点：严格参数配置 / 安全收口 / 自建主节点 / 日新备用节点(排除专线) / AI节点重构 / 全量 MRS 远程规则替换 / 增加AI中转 / AWAvenue 广告过滤
+ * 优化点：严格参数配置 / 安全收口 / 动态主节点(自建+Free) / 备用节点 / 全量 MRS 远程规则替换 / AWAvenue 广告过滤
  */
 
 function stringToArray(val) {
@@ -13,7 +13,7 @@ function stringToArray(val) {
 }
 
 // ==========================================
-// ⚙️ 1. 静态与核心配置区域 (请在此处修改参数)
+// ⚙️ 1. 静态与核心配置区域
 // ==========================================
 
 const _skipIps =
@@ -78,25 +78,14 @@ const args =
         githubProxy: 'https://ghfast.top/',
         subscriptions: _proxyProviders,
 
-        // 🚀 【核心性能与耗电配置】 🚀
-        // 电脑端无缝切换体验建议：checkInterval = 300, lazy = false、移动端省电建议：checkInterval = 900, lazy = true
+        // 核心性能与耗电配置
         checkInterval: 900,
-
-        // 是否开启按需测速
-        // false = 后台持续测速保持热启动、true = 需要时才唤醒测速
         lazy: true,
 
-        // ==========================================
-        // 🚀 【主节点分组开关】
-        // ==========================================
-        // true：
-        //   保留“主节点”策略组、默认节点可以使用主节点、AI / 虚拟货币可以使用主节点
-        // false：
-        //   完全禁用“主节点”策略组、其他策略组自动删除“主节点”引用
-        enablePrimaryNode: false,
+        // 主节点总开关（当为 true 时，如果存在“自建”或“free”节点会自动展示，否则自动隐藏）
+        enablePrimaryNode: true,
       }
 
-// 使用 ?? 解决 false 被吞的基础逻辑 bug
 let enable = args.enable ?? true
 let ruleSet = args.ruleSet ?? 'all'
 let regionSet = args.regionSet ?? 'all'
@@ -114,13 +103,8 @@ let githubProxy = args.githubProxy ?? 'https://ghfast.top/'
 let subscriptions = args.subscriptions ?? _proxyProviders
 let checkInterval = args.checkInterval ?? 300
 let lazy = args.lazy ?? false
-
-// 🚀 主节点分组开关
 let enablePrimaryNode = args.enablePrimaryNode ?? true
 
-/**
- * 模式配置
- */
 if (
   ['securest', 'secure', 'default', 'fast', 'fastest'].includes(mode)
 ) {
@@ -155,7 +139,7 @@ if (
       defaultDNS = _chinaIpDns
       directDNS = _chinaIpDns
       chinaDNS = _chinaDohDns
-      foreignDNS = _chinaDohDns
+      foreignDNS = _foreignDohDns
       break
   }
 }
@@ -166,6 +150,7 @@ directDNS = stringToArray(directDNS)
 chinaDNS = stringToArray(chinaDNS)
 foreignDNS = stringToArray(foreignDNS)
 
+// 去除 ai_relay, bahamut, hbo, primevideo, hulu
 let ruleOptions = {
   ads: true,
   apple: false,
@@ -173,17 +158,12 @@ let ruleOptions = {
   github: true,
   google: true,
   openai: true,
-  ai_relay: true,
   crypto: true,
   spotify: true,
   youtube: true,
-  bahamut: false,
   netflix: false,
   tiktok: false,
   disney: false,
-  hbo: false,
-  hulu: false,
-  primevideo: false,
   telegram: true,
   line: false,
   games: true,
@@ -381,7 +361,6 @@ const ruleProviderCommon = {
   interval: 86400
 }
 
-// 动态引用上方的测速变量
 const groupBaseOption = {
   interval: checkInterval,
   timeout: 3000,
@@ -425,7 +404,7 @@ function isAdInfoNode(name) {
   return false
 }
 
-// --- 2. 服务规则数据结构 (全量重构为 MRS) ---
+// --- 2. 服务规则数据结构 (已移除 ai_relay, bahamut, hbo, primevideo, hulu) ---
 const serviceConfigs = [
   {
     key: 'ads',
@@ -500,29 +479,6 @@ const serviceConfigs = [
         key: 'microsoft_mrs',
         url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/microsoft.mrs`,
         path: './ruleset/metacubex/microsoft.mrs',
-        format: 'mrs',
-        behavior: 'domain'
-      }
-    ]
-  },
-  
-  // ========================================
-  // 🤖 AI中转
-  // ========================================
-  {
-    key: 'ai_relay',
-    name: 'AI中转',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Server.png',
-    url: 'https://www.gstatic.com/generate_204',
-    rules: [
-      'DOMAIN-SUFFIX,larprouter.com,AI中转',
-      'RULE-SET,ai_relay_mrs,AI中转'
-    ],
-    providers: [
-      {
-        key: 'ai_relay_mrs',
-        url: `${githubProxy}https://raw.githubusercontent.com/placeholder/rules/main/ai_relay.mrs`,
-        path: './ruleset/custom/ai_relay.mrs',
         format: 'mrs',
         behavior: 'domain'
       }
@@ -649,25 +605,6 @@ const serviceConfigs = [
   },
 
   {
-    key: 'bahamut',
-    name: '巴哈姆特',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Bahamut.png',
-    url: 'https://ani.gamer.com.tw/ajax/getdeviceid.php',
-    rules: [
-      'RULE-SET,bahamut_mrs,巴哈姆特'
-    ],
-    providers: [
-      {
-        key: 'bahamut_mrs',
-        url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/bahamut.mrs`,
-        path: './ruleset/metacubex/bahamut.mrs',
-        format: 'mrs',
-        behavior: 'domain'
-      }
-    ]
-  },
-
-  {
     key: 'disney',
     name: 'Disney+',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Disney.png',
@@ -737,63 +674,6 @@ const serviceConfigs = [
         key: 'spotify_mrs',
         url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/spotify.mrs`,
         path: './ruleset/metacubex/spotify.mrs',
-        format: 'mrs',
-        behavior: 'domain'
-      }
-    ]
-  },
-
-  {
-    key: 'hbo',
-    name: 'HBO',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/HBO.png',
-    url: 'https://www.hbo.com/favicon.ico',
-    rules: [
-      'RULE-SET,hbo_mrs,HBO'
-    ],
-    providers: [
-      {
-        key: 'hbo_mrs',
-        url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/hbo.mrs`,
-        path: './ruleset/metacubex/hbo.mrs',
-        format: 'mrs',
-        behavior: 'domain'
-      }
-    ]
-  },
-
-  {
-    key: 'primevideo',
-    name: 'Prime Video',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Prime_Video.png',
-    url: 'https://m.media-amazon.com/images/G/01/digital/video/web/logo-min-remaster.png',
-    rules: [
-      'RULE-SET,primevideo_mrs,Prime Video'
-    ],
-    providers: [
-      {
-        key: 'primevideo_mrs',
-        url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/primevideo.mrs`,
-        path: './ruleset/metacubex/primevideo.mrs',
-        format: 'mrs',
-        behavior: 'domain'
-      }
-    ]
-  },
-
-  {
-    key: 'hulu',
-    name: 'Hulu',
-    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Hulu.png',
-    url: 'https://auth.hulu.com/v4/web/password/authenticate',
-    rules: [
-      'RULE-SET,hulu_mrs,Hulu'
-    ],
-    providers: [
-      {
-        key: 'hulu_mrs',
-        url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/hulu.mrs`,
-        path: './ruleset/metacubex/hulu.mrs',
         format: 'mrs',
         behavior: 'domain'
       }
@@ -899,7 +779,6 @@ function main(config) {
     )
   }
 
-  // 外部控制面安全收口
   config['allow-lan'] = false
   config['bind-address'] = '127.0.0.1'
   config['external-controller'] =
@@ -1279,10 +1158,6 @@ function main(config) {
     )
   }
 
-  // ==========================================
-  // 实际生成的国家/地区策略组名称
-  // ==========================================
-
   const regionGroupNames =
     generatedRegionGroups.map(
       (g) => g.name
@@ -1317,14 +1192,16 @@ function main(config) {
 
   const functionalGroups = []
 
-  // 🚀 主节点
-  const primaryProxies =
-    allLocalProxyNames.filter(
-      (name) =>
-        name.includes('自建')
-    )
+  // 1. 主节点（采集节点名称中包含“自建”或“free”的节点）
+  const primaryRegex = /(?:自建|free)/i
+  const primaryProxies = allLocalProxyNames.filter((name) =>
+    primaryRegex.test(name)
+  )
 
-  if (enablePrimaryNode) {
+  // 仅在开启了开关且确实匹配到节点时才展示“主节点”，否则自动隐藏
+  const hasPrimaryNode = enablePrimaryNode && primaryProxies.length > 0
+
+  if (hasPrimaryNode) {
     const primaryGroup = {
       ...groupBaseOption,
 
@@ -1332,38 +1209,27 @@ function main(config) {
       type: 'url-test',
       tolerance: 50,
 
-      proxies:
-        primaryProxies.length > 0
-          ? primaryProxies
-          : ['直连'],
+      proxies: primaryProxies,
 
       icon:
         'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_States.png',
     }
 
     if (hasProviders) {
-      primaryGroup.use =
-        providerKeys
-
-      primaryGroup.filter =
-        '自建'
+      primaryGroup.use = providerKeys
+      primaryGroup.filter = '(?i)自建|free'
     }
 
-    functionalGroups.push(
-      primaryGroup
-    )
+    functionalGroups.push(primaryGroup)
   }
 
-  // 🚀 备用节点
-  const backupProxies =
-    allLocalProxyNames.filter(
-      (name) =>
-        !name.includes('自建') &&
-        !name.includes('专线') &&
-        /日本|🇯🇵|jp|japan|新加坡|🇸🇬|sg|singapore/i.test(
-          name
-        )
-    )
+  // 2. 备用节点（排除自建、free 及专线）
+  const backupProxies = allLocalProxyNames.filter(
+    (name) =>
+      !primaryRegex.test(name) &&
+      !name.includes('专线') &&
+      /日本|🇯🇵|jp|japan|新加坡|🇸🇬|sg|singapore/i.test(name)
+  )
 
   const backupGroup = {
     ...groupBaseOption,
@@ -1382,86 +1248,51 @@ function main(config) {
   }
 
   if (hasProviders) {
-    backupGroup.use =
-      providerKeys
-
+    backupGroup.use = providerKeys
     backupGroup.filter =
       '(?i)日本|🇯🇵|jp|japan|新加坡|🇸🇬|sg|singapore'
-
-    backupGroup[
-      'exclude-filter'
-    ] =
-      '(?i)自建|专线'
+    backupGroup['exclude-filter'] =
+      '(?i)自建|free|专线'
   }
 
-  functionalGroups.push(
-    backupGroup
-  )
+  functionalGroups.push(backupGroup)
 
-  // 🚀 默认节点
+  // 3. 默认节点（动态跟随主节点的启用状态）
   const defaultNodeGroup = {
     ...groupBaseOption,
 
     name: '默认节点',
     type: 'fallback',
 
-    proxies:
-      enablePrimaryNode
-        ? [
-            '主节点',
-            '备用节点'
-          ]
-        : [
-            '备用节点'
-          ],
+    proxies: hasPrimaryNode
+      ? ['主节点', '备用节点']
+      : ['备用节点'],
 
     icon:
       'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png',
   }
 
-  functionalGroups.push(
-    defaultNodeGroup
-  )
+  functionalGroups.push(defaultNodeGroup)
 
-  // 🚀 服务策略组
+  // 4. 服务策略组
   serviceConfigs.forEach(
     (svc) => {
-      if (
-        !ruleOptions[
-          svc.key
-        ]
-      ) {
+      if (!ruleOptions[svc.key]) {
         return
       }
 
-      rules.push(
-        ...svc.rules
-      )
+      rules.push(...svc.rules)
 
-      if (
-        Array.isArray(
-          svc.providers
-        )
-      ) {
-        svc.providers.forEach(
-          (p) => {
-            ruleProviders[
-              p.key
-            ] = {
-              ...ruleProviderCommon,
-
-              behavior:
-                p.behavior,
-
-              format:
-                p.format,
-
-              url: p.url,
-
-              path: p.path
-            }
+      if (Array.isArray(svc.providers)) {
+        svc.providers.forEach((p) => {
+          ruleProviders[p.key] = {
+            ...ruleProviderCommon,
+            behavior: p.behavior,
+            format: p.format,
+            url: p.url,
+            path: p.path
           }
-        )
+        })
       }
 
       let groupProxies
@@ -1473,37 +1304,25 @@ function main(config) {
           '默认节点'
         ]
       } else if (
-        svc.key ===
-        'bahamut'
-      ) {
-        groupProxies = [
-          '默认节点',
-          ...regionGroupNames,
-          '直连'
-        ]
-      } else if (
         svc.key === 'openai' ||
-        svc.key === 'crypto' ||
-        svc.key === 'ai_relay'
+        svc.key === 'crypto'
       ) {
-        groupProxies =
-          enablePrimaryNode
-            ? [
-                '默认节点',
-                '备用节点',
-                '主节点',
-                ...regionGroupNames,
-                '直连'
-              ]
-            : [
-                '默认节点',
-                '备用节点',
-                ...regionGroupNames,
-                '直连'
-              ]
+        groupProxies = hasPrimaryNode
+          ? [
+              '默认节点',
+              '备用节点',
+              '主节点',
+              ...regionGroupNames,
+              '直连'
+            ]
+          : [
+              '默认节点',
+              '备用节点',
+              ...regionGroupNames,
+              '直连'
+            ]
 
-        svc._isStrictRegion =
-          false
+        svc._isStrictRegion = false
       } else {
         groupProxies = [
           '默认节点',
@@ -1514,35 +1333,25 @@ function main(config) {
 
       const group = {
         ...groupBaseOption,
-
         name: svc.name,
         type: 'select',
-
-        proxies:
-          groupProxies,
-
+        proxies: groupProxies,
         icon: svc.icon
       }
-      
+
       if (svc.url) {
         group.url = svc.url
       }
 
       if (hasProviders) {
-        group.use =
-          providerKeys
-
-        if (
-          svc._isStrictRegion
-        ) {
+        group.use = providerKeys
+        if (svc._isStrictRegion) {
           group.filter =
             '(?i)港|🇭🇰|hk|hongkong|美|🇺🇸|us|usa|日本|🇯🇵|jp|japan|新加坡|🇸🇬|sg|singapore'
         }
       }
 
-      functionalGroups.push(
-        group
-      )
+      functionalGroups.push(group)
     }
   )
 
@@ -1568,8 +1377,7 @@ function main(config) {
       }
 
       if (hasProviders) {
-        group.use =
-          providerKeys
+        group.use = providerKeys
       }
 
       return group
@@ -1617,11 +1425,8 @@ function main(config) {
     ...generatedRegionGroups
   ]
 
-  config['rules'] =
-    rules
-
-  config['rule-providers'] =
-    ruleProviders
+  config['rules'] = rules
+  config['rule-providers'] = ruleProviders
 
   return config
 }
