@@ -404,7 +404,7 @@ function isAdInfoNode(name) {
   return false
 }
 
-// --- 2. 服务规则数据结构 (已移除 ai_relay, bahamut, hbo, primevideo, hulu) ---
+// --- 2. 服务规则数据结构 ---
 const serviceConfigs = [
   {
     key: 'ads',
@@ -1301,7 +1301,8 @@ function main(config) {
         groupProxies = [
           'REJECT',
           '直连',
-          '默认节点'
+          '默认节点',
+          '备用节点'
         ]
       } else if (
         svc.key === 'openai' ||
@@ -1326,6 +1327,7 @@ function main(config) {
       } else {
         groupProxies = [
           '默认节点',
+          '备用节点',
           ...regionGroupNames,
           '直连'
         ]
@@ -1390,6 +1392,7 @@ function main(config) {
 
       proxies: [
         '默认节点',
+        '备用节点',
         '国内网站',
         ...allLocalProxyNames
       ],
@@ -1405,6 +1408,7 @@ function main(config) {
       proxies: [
         '直连',
         '默认节点',
+        '备用节点',
         ...allLocalProxyNames
       ],
 
