@@ -1,6 +1,10 @@
 /***
- * Clash Verge Rev / Mihomo Party 优化脚本
- * 优化点：严格参数配置 / 安全收口 / 动态主节点(自建+Free) / 备用节点 / 全量 MRS 远程规则替换 / AWAvenue 广告过滤
+ * Clash Verge Rev / Mihomo Party / OpenClash 优化脚本
+ * 优化点：
+ * 1. 彻底移除境外不可达 Fallback，杜绝 5 秒 context deadline 超时
+ * 2. 修复 telegram_ip_mrs 导致的 DNS 泄漏 (追加 no-resolve)
+ * 3. 优化 Fake-IP 性能，关闭 prefer-h3 与 respect-rules 冲突
+ * 4. 内置 AdGuard Home (127.0.0.1:5335) 开关与联动支持
  */
 
 function stringToArray(val) {
@@ -46,14 +50,8 @@ const _proxyProviders = {
 const _chinaDohDns =
   'https://doh.pub/dns-query;https://dns.alidns.com/dns-query'
 
-const _foreignDohDns =
-  'https://dns.google/dns-query;https://dns.adguard-dns.com/dns-query'
-
 const _chinaIpDns =
-  '119.29.29.29;223.5.5.5'
-
-const _foreignIpDns =
-  '8.8.8.8;94.140.14.14'
+  '223.5.5.5;119.29.29.29'
 
 /**
  * 整个脚本的总开关与核心变量
@@ -71,9 +69,8 @@ const args =
         defaultDNS: _chinaIpDns,
         directDNS: _chinaIpDns,
         chinaDNS: _chinaDohDns,
-        foreignDNS: _foreignDohDns,
         mode: 'default',
-        ipv6: false,
+        ipv6: false, // 禁用 IPv6，彻底规避双栈回退卡顿
         logLevel: 'error',
         githubProxy: 'https://ghfast.top/',
         subscriptions: _proxyProviders,
@@ -82,8 +79,12 @@ const args =
         checkInterval: 900,
         lazy: true,
 
-        // 主节点总开关（当为 true 时，如果存在“自建”或“free”节点会自动展示，否则自动隐藏）
+        // 主节点总开关
         enablePrimaryNode: true,
+
+        // ⭐ AdGuard Home 联动开关 (若路由器运行 AGH 监听 5335，设为 true)
+        enableAdguardHome: true,
+        adguardHomeDNS: '127.0.0.1:5335',
       }
 
 let enable = args.enable ?? true
@@ -95,7 +96,6 @@ let skipIps = args.skipIps ?? _skipIps
 let defaultDNS = args.defaultDNS ?? _chinaIpDns
 let directDNS = args.directDNS ?? _chinaIpDns
 let chinaDNS = args.chinaDNS ?? _chinaDohDns
-let foreignDNS = args.foreignDNS ?? _foreignDohDns
 let mode = args.mode ?? ''
 let ipv6 = args.ipv6 ?? false
 let logLevel = args.logLevel ?? 'error'
@@ -104,53 +104,20 @@ let subscriptions = args.subscriptions ?? _proxyProviders
 let checkInterval = args.checkInterval ?? 300
 let lazy = args.lazy ?? false
 let enablePrimaryNode = args.enablePrimaryNode ?? true
-
-if (
-  ['securest', 'secure', 'default', 'fast', 'fastest'].includes(mode)
-) {
-  switch (mode) {
-    case 'securest':
-      defaultDNS = _foreignIpDns
-      directDNS = _foreignDohDns
-      break
-
-    case 'secure':
-      defaultDNS = _foreignIpDns
-      directDNS = _chinaDohDns
-      chinaDNS = _chinaDohDns
-      foreignDNS = _foreignDohDns
-      break
-
-    case 'fast':
-      defaultDNS = _chinaIpDns
-      directDNS = _chinaIpDns
-      chinaDNS = _chinaIpDns
-      foreignDNS = _chinaDohDns
-      break
-
-    case 'fastest':
-      defaultDNS = _chinaIpDns
-      directDNS = _chinaIpDns
-      chinaDNS = _chinaIpDns
-      foreignDNS = _foreignIpDns
-      break
-
-    default:
-      defaultDNS = _chinaIpDns
-      directDNS = _chinaIpDns
-      chinaDNS = _chinaDohDns
-      foreignDNS = _foreignDohDns
-      break
-  }
-}
+let enableAdguardHome = args.enableAdguardHome ?? true
+let adguardHomeDNS = args.adguardHomeDNS ?? '127.0.0.1:5335'
 
 skipIps = stringToArray(skipIps)
 defaultDNS = stringToArray(defaultDNS)
 directDNS = stringToArray(directDNS)
 chinaDNS = stringToArray(chinaDNS)
-foreignDNS = stringToArray(foreignDNS)
 
-// 去除 ai_relay, bahamut, hbo, primevideo, hulu
+// 若开启 AdGuard Home，优先置顶 127.0.0.1:5335
+if (enableAdguardHome) {
+  chinaDNS = [adguardHomeDNS, ...chinaDNS.filter((d) => d !== adguardHomeDNS)]
+  directDNS = [adguardHomeDNS, ...directDNS.filter((d) => d !== adguardHomeDNS)]
+}
+
 let ruleOptions = {
   ads: true,
   apple: false,
@@ -170,27 +137,22 @@ let ruleOptions = {
 }
 
 if (ruleSet === 'all') {
-  Object.keys(ruleOptions).forEach(
-    (key) => (ruleOptions[key] = true)
-  )
+  Object.keys(ruleOptions).forEach((key) => (ruleOptions[key] = true))
 } else if (typeof ruleSet === 'string') {
   ruleSet
     .split(';')
     .map((s) => s.trim())
     .forEach((key) => {
-      if (
-        Object.prototype.hasOwnProperty.call(
-          ruleOptions,
-          key
-        )
-      ) {
+      if (Object.prototype.hasOwnProperty.call(ruleOptions, key)) {
         ruleOptions[key] = true
       }
     })
 }
 
+// 局域网直连前置
 const rules = [
-  'PROCESS-NAME-REGEX,(?i).*cloudflared.*,直连'
+  'PROCESS-NAME-REGEX,(?i).*cloudflared.*,直连',
+  'GEOSITE,private,直连'
 ]
 
 const allRegionDefinitions = [
@@ -273,32 +235,29 @@ let regionDefinitions = []
 if (regionSet === 'all') {
   regionDefinitions = allRegionDefinitions
 } else {
-  const enabledRegions = regionSet
-    .split(';')
-    .map((s) => s.trim())
-
-  regionDefinitions =
-    allRegionDefinitions.filter((r) =>
-      enabledRegions.includes(
-        r.name.substring(0, 2)
-      )
-    )
+  const enabledRegions = regionSet.split(';').map((s) => s.trim())
+  regionDefinitions = allRegionDefinitions.filter((r) =>
+    enabledRegions.includes(r.name.substring(0, 2))
+  )
 }
 
+// ==========================================
+// 🚀 核心优化：纯净高速 Fake-IP DNS 模块
+// ==========================================
 const dnsConfig = {
   enable: true,
   listen: '0.0.0.0:53',
-  ipv6: ipv6,
+  ipv6: false, // 强制关闭 IPv6 DNS 解析
 
   'independent-cache': true,
   'cache-size': 8192,
-  'fallback-cache': true,
+  'fallback-cache': false,
 
   'log-level': logLevel,
-  'prefer-h3': true,
+  'prefer-h3': false, // 关闭 H3，防止海外 QUIC DNS 超时
   'use-hosts': true,
   'use-system-hosts': true,
-  'respect-rules': true,
+  'respect-rules': false, // Fake-IP 模式下设为 false 避免解析混乱
 
   'enhanced-mode': 'fake-ip',
   'fake-ip-range': '198.18.0.0/16',
@@ -334,24 +293,15 @@ const dnsConfig = {
   nameserver: chinaDNS,
   'default-nameserver': defaultDNS,
   'direct-nameserver': directDNS,
-  fallback: foreignDNS,
+  'proxy-server-nameserver': defaultDNS,
 
-  'fallback-filter': {
-    geoip: true,
-    'geoip-code': 'CN',
-    geosite: ['gfw']
-  },
-
-  'proxy-server-nameserver': chinaDNS,
+  // 彻底移除 fallback 与 fallback-filter，杜绝 5 秒 context deadline 超时！
 
   'nameserver-policy': {
     'geosite:private': 'system',
-
     'geosite:tld-cn,cn,steam@cn,category-games@cn,microsoft@cn,apple@cn,category-game-platforms-download@cn,category-public-tracker':
       chinaDNS,
-
-    'geosite:gfw,jetbrains-ai,category-ai-!cn,category-ai-chat-!cn':
-      foreignDNS,
+    // 移除将 gfw 域名导向国外 DoH 的 policy，交由内核 Fake-IP 处理
   },
 }
 
@@ -392,15 +342,9 @@ const adInfoRegex =
   /\b(?:USE|USED|TOTAL|EXPIRE|EMAIL)\b|Panel|Channel|Author|Traffic|Reset|Expire|Renew|Support|Telegram|https?:\/\/|(?:\d+\.\d+)\s*(GB|TB|MB|KB)|\d{4}[-/]\d{2}[-/]\d{2}/i
 
 function isAdInfoNode(name) {
-  if (!name || typeof name !== 'string') {
-    return false
-  }
-  if (adInfoKeywords.some((kw) => name.includes(kw))) {
-    return true
-  }
-  if (adInfoRegex.test(name)) {
-    return true
-  }
+  if (!name || typeof name !== 'string') return false
+  if (adInfoKeywords.some((kw) => name.includes(kw))) return true
+  if (adInfoRegex.test(name)) return true
   return false
 }
 
@@ -444,9 +388,7 @@ const serviceConfigs = [
     name: 'Github',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/GitHub.png',
     url: 'https://github.com/robots.txt',
-    rules: [
-      'RULE-SET,github_mrs,Github'
-    ],
+    rules: ['RULE-SET,github_mrs,Github'],
     providers: [
       {
         key: 'github_mrs',
@@ -533,9 +475,7 @@ const serviceConfigs = [
     name: '虚拟货币',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Cryptocurrency.png',
     url: 'https://www.binance.com/robots.txt',
-    rules: [
-      'RULE-SET,crypto_rules,虚拟货币'
-    ],
+    rules: ['RULE-SET,crypto_rules,虚拟货币'],
     providers: [
       {
         key: 'crypto_rules',
@@ -552,9 +492,7 @@ const serviceConfigs = [
     name: '苹果服务',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Apple.png',
     url: 'https://www.apple.com/library/test/success.html',
-    rules: [
-      'RULE-SET,apple-cn_mrs,苹果服务'
-    ],
+    rules: ['RULE-SET,apple-cn_mrs,苹果服务'],
     providers: [
       {
         key: 'apple-cn_mrs',
@@ -571,9 +509,7 @@ const serviceConfigs = [
     name: '谷歌服务',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Google_Search.png',
     url: 'https://www.google.com/generate_204',
-    rules: [
-      'RULE-SET,google_mrs,谷歌服务'
-    ],
+    rules: ['RULE-SET,google_mrs,谷歌服务'],
     providers: [
       {
         key: 'google_mrs',
@@ -590,9 +526,7 @@ const serviceConfigs = [
     name: 'YouTube',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/YouTube.png',
     url: 'https://www.youtube.com/s/desktop/494dd881/img/favicon.ico',
-    rules: [
-      'RULE-SET,youtube_mrs,YouTube'
-    ],
+    rules: ['RULE-SET,youtube_mrs,YouTube'],
     providers: [
       {
         key: 'youtube_mrs',
@@ -609,9 +543,7 @@ const serviceConfigs = [
     name: 'Disney+',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Disney.png',
     url: 'https://disney.api.edge.bamgrid.com/devices',
-    rules: [
-      'RULE-SET,disney_mrs,Disney+'
-    ],
+    rules: ['RULE-SET,disney_mrs,Disney+'],
     providers: [
       {
         key: 'disney_mrs',
@@ -628,9 +560,7 @@ const serviceConfigs = [
     name: 'NETFLIX',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Netflix_Letter.png',
     url: 'https://api.fast.com/netflix/speedtest/v2?https=true',
-    rules: [
-      'RULE-SET,netflix_mrs,NETFLIX'
-    ],
+    rules: ['RULE-SET,netflix_mrs,NETFLIX'],
     providers: [
       {
         key: 'netflix_mrs',
@@ -647,9 +577,7 @@ const serviceConfigs = [
     name: 'Tiktok',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/TikTok.png',
     url: 'https://www.tiktok.com/',
-    rules: [
-      'RULE-SET,tiktok_mrs,Tiktok'
-    ],
+    rules: ['RULE-SET,tiktok_mrs,Tiktok'],
     providers: [
       {
         key: 'tiktok_mrs',
@@ -666,9 +594,7 @@ const serviceConfigs = [
     name: 'Spotify',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Spotify.png',
     url: 'https://spclient.wg.spotify.com/signup/public/v1/account',
-    rules: [
-      'RULE-SET,spotify_mrs,Spotify'
-    ],
+    rules: ['RULE-SET,spotify_mrs,Spotify'],
     providers: [
       {
         key: 'spotify_mrs',
@@ -687,7 +613,8 @@ const serviceConfigs = [
     url: 'https://www.telegram.org/img/website_icon.svg',
     rules: [
       'RULE-SET,telegram_domain_mrs,Telegram',
-      'RULE-SET,telegram_ip_mrs,Telegram'
+      // ⭐ 核心修复：必须添加 no-resolve，杜绝 DNS 泄漏！
+      'RULE-SET,telegram_ip_mrs,Telegram,no-resolve'
     ],
     providers: [
       {
@@ -712,9 +639,7 @@ const serviceConfigs = [
     name: 'Line',
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Line.png',
     url: 'https://line.me/page-data/app-data.json',
-    rules: [
-      'RULE-SET,line_mrs,Line'
-    ],
+    rules: ['RULE-SET,line_mrs,Line'],
     providers: [
       {
         key: 'line_mrs',
@@ -765,36 +690,23 @@ function main(config) {
 
   const proxyProviderCount =
     typeof config?.['proxy-providers'] === 'object'
-      ? Object.keys(
-          config['proxy-providers']
-        ).length
+      ? Object.keys(config['proxy-providers']).length
       : 0
 
-  if (
-    proxyCount === 0 &&
-    proxyProviderCount === 0
-  ) {
-    throw new Error(
-      '配置文件中未找到任何代理'
-    )
+  if (proxyCount === 0 && proxyProviderCount === 0) {
+    throw new Error('配置文件中未找到任何代理')
   }
 
-  config['allow-lan'] = false
-  config['bind-address'] = '127.0.0.1'
-  config['external-controller'] =
-    '127.0.0.1:1906'
-
+  config['allow-lan'] = true
+  config['bind-address'] = '*'
   config['mode'] = 'rule'
   config['ipv6'] = ipv6
-  config['secret'] =
-    'mihomo_party_secret'
 
   config['mixed-port'] = 7890
-  config['redir-port'] = 7891
-  config['tproxy-port'] = 7892
+  config['redir-port'] = 7892
+  config['tproxy-port'] = 7895
 
   config['external-ui'] = 'ui'
-
   config['external-ui-url'] =
     `${githubProxy}https://github.com/Zephyruso/zashboard/releases/latest/download/dist.zip`
 
@@ -821,17 +733,9 @@ function main(config) {
     'override-destination': true,
 
     sniff: {
-      TLS: {
-        ports: [443, 8443]
-      },
-
-      HTTP: {
-        ports: [80, '8080-8880']
-      },
-
-      QUIC: {
-        ports: [443, 8443]
-      }
+      TLS: { ports: [443, 8443] },
+      HTTP: { ports: [80, '8080-8880'] },
+      QUIC: { ports: [443, 8443] }
     },
 
     'skip-src-address': skipIps,
@@ -846,10 +750,7 @@ function main(config) {
       'geosite:twitter'
     ],
 
-    'skip-domain': [
-      'Mijia Cloud',
-      '+.oray.com'
-    ],
+    'skip-domain': ['Mijia Cloud', '+.oray.com'],
   }
 
   config['ntp'] = {
@@ -869,105 +770,54 @@ function main(config) {
     mtu: 1500,
     gso: true,
     'gso-max-size': 65536,
-
-    'exclude-interface': [
-      'NodeBabyLink'
-    ],
-
-    'route-exclude-address':
-      skipIps.filter(
-        (ip) => ip !== '198.18.0.0/16'
-      ),
-
-    'dns-hijack': [
-      'any:53',
-      'tcp://any:53'
-    ],
+    'exclude-interface': ['NodeBabyLink'],
+    'route-exclude-address': skipIps.filter((ip) => ip !== '198.18.0.0/16'),
+    'dns-hijack': ['any:53', 'tcp://any:53'],
   }
 
   config['geox-url'] = {
-    geoip:
-      `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat`,
-
-    geosite:
-      `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat`,
-
-    mmdb:
-      `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.metadb`,
-
-    asn:
-      `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb`,
+    geoip: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat`,
+    geosite: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat`,
+    mmdb: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.metadb`,
+    asn: `${githubProxy}https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb`,
   }
 
   // ==========================================
   // 3.2 多订阅聚合
   // ==========================================
-
   const providerKeys = []
 
-  if (
-    typeof subscriptions === 'object' &&
-    subscriptions !== null
-  ) {
-    const entries =
-      Object.entries(
-        subscriptions
-      ).filter(([, cfg]) => {
-        const url =
-          cfg && cfg.url
-
-        return (
-          url &&
-          typeof url === 'string' &&
-          /^https?:\/\//.test(url)
-        )
-      })
+  if (typeof subscriptions === 'object' && subscriptions !== null) {
+    const entries = Object.entries(subscriptions).filter(([, cfg]) => {
+      const url = cfg && cfg.url
+      return url && typeof url === 'string' && /^https?:\/\//.test(url)
+    })
 
     if (entries.length > 0) {
-      config['proxy-providers'] =
-        config['proxy-providers'] || {}
+      config['proxy-providers'] = config['proxy-providers'] || {}
 
-      entries.forEach(
-        ([key, cfg]) => {
-          providerKeys.push(key)
+      entries.forEach(([key, cfg]) => {
+        providerKeys.push(key)
 
-          const provider = {
-            type:
-              cfg.type || 'http',
-
-            url: cfg.url,
-
-            interval:
-              cfg.interval || 86400,
-
-            'health-check': {
-              enable: true,
-              url:
-                'https://www.gstatic.com/generate_204',
-              interval:
-                checkInterval
-            },
-          }
-
-          if (
-            cfg.override &&
-            cfg.override[
-              'additional-prefix'
-            ]
-          ) {
-            provider.override = {
-              'additional-prefix':
-                cfg.override[
-                  'additional-prefix'
-                ]
-            }
-          }
-
-          config[
-            'proxy-providers'
-          ][key] = provider
+        const provider = {
+          type: cfg.type || 'http',
+          url: cfg.url,
+          interval: cfg.interval || 86400,
+          'health-check': {
+            enable: true,
+            url: 'https://www.gstatic.com/generate_204',
+            interval: checkInterval
+          },
         }
-      )
+
+        if (cfg.override && cfg.override['additional-prefix']) {
+          provider.override = {
+            'additional-prefix': cfg.override['additional-prefix']
+          }
+        }
+
+        config['proxy-providers'][key] = provider
+      })
     }
   }
 
@@ -986,70 +836,37 @@ function main(config) {
   // ==========================================
   // 3.3 本地代理分类
   // ==========================================
-
   const regionGroups = {}
 
-  regionDefinitions.forEach(
-    (r) => {
-      regionGroups[r.name] = {
-        ...r,
-        proxies: []
-      }
+  regionDefinitions.forEach((r) => {
+    regionGroups[r.name] = {
+      ...r,
+      proxies: []
     }
-  )
+  })
 
   const otherProxies = []
 
-  for (
-    let i = 0;
-    i < proxyCount;
-    i++
-  ) {
+  for (let i = 0; i < proxyCount; i++) {
     const proxy = proxies[i]
     const name = proxy.name
 
-    if (isAdInfoNode(name)) {
-      continue
-    }
+    if (isAdInfoNode(name)) continue
 
-    if (
-      excludeHighPercentage
-    ) {
-      const match =
-        multiplierRegex.exec(
-          name
-        )
-
+    if (excludeHighPercentage) {
+      const match = multiplierRegex.exec(name)
       if (match) {
-        const ratio =
-          parseFloat(
-            match[1] ||
-            match[2]
-          )
-
-        if (
-          !isNaN(ratio) &&
-          ratio >
-            globalRatioLimit
-        ) {
+        const ratio = parseFloat(match[1] || match[2])
+        if (!isNaN(ratio) && ratio > globalRatioLimit) {
           continue
         }
       }
     }
 
     let matched = false
-
-    for (
-      const region of
-      regionDefinitions
-    ) {
-      if (
-        region.regex.test(name)
-      ) {
-        regionGroups[
-          region.name
-        ].proxies.push(name)
-
+    for (const region of regionDefinitions) {
+      if (region.regex.test(name)) {
+        regionGroups[region.name].proxies.push(name)
         matched = true
         break
       }
@@ -1063,156 +880,90 @@ function main(config) {
   // ==========================================
   // 3.4 构建地区策略组
   // ==========================================
+  const generatedRegionGroups = []
+  const hasProviders = providerKeys.length > 0
+  const allRegionKeywords = regionDefinitions
+    .map((r) => r.filter.replace('(?i)', ''))
+    .join('|')
 
-  const generatedRegionGroups =
-    []
+  regionDefinitions.forEach((r) => {
+    const groupData = regionGroups[r.name]
+    const hasLocalNodes = groupData.proxies.length > 0
 
-  const hasProviders =
-    providerKeys.length > 0
-
-  const allRegionKeywords =
-    regionDefinitions
-      .map(
-        (r) =>
-          r.filter.replace(
-            '(?i)',
-            ''
-          )
-      )
-      .join('|')
-
-  regionDefinitions.forEach(
-    (r) => {
-      const groupData =
-        regionGroups[r.name]
-
-      const hasLocalNodes =
-        groupData.proxies.length >
-        0
-
-      if (hasLocalNodes) {
-        const group = {
-          ...groupBaseOption,
-
-          name: r.name,
-          type: 'url-test',
-          tolerance: 50,
-
-          icon: r.icon,
-
-          proxies:
-            groupData.proxies
-        }
-
-        if (hasProviders) {
-          group.use =
-            providerKeys
-
-          group.filter =
-            r.filter
-        }
-
-        generatedRegionGroups.push(
-          group
-        )
+    if (hasLocalNodes) {
+      const group = {
+        ...groupBaseOption,
+        name: r.name,
+        type: 'url-test',
+        tolerance: 50,
+        icon: r.icon,
+        proxies: groupData.proxies
       }
-    }
-  )
 
-  if (
-    otherProxies.length > 0 ||
-    hasProviders
-  ) {
+      if (hasProviders) {
+        group.use = providerKeys
+        group.filter = r.filter
+      }
+
+      generatedRegionGroups.push(group)
+    }
+  })
+
+  if (otherProxies.length > 0 || hasProviders) {
     const otherGroup = {
       ...groupBaseOption,
-
       name: '其他节点',
       type: 'select',
-
-      icon:
-        'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Global.png'
+      icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Global.png'
     }
 
-    if (
-      otherProxies.length > 0
-    ) {
-      otherGroup.proxies =
-        otherProxies
+    if (otherProxies.length > 0) {
+      otherGroup.proxies = otherProxies
     }
 
     if (hasProviders) {
-      otherGroup.use =
-        providerKeys
-
-      if (
-        otherProxies.length ===
-        0
-      ) {
-        otherGroup.filter =
-          `(?i)^(?!.*(?:${allRegionKeywords})).*`
+      otherGroup.use = providerKeys
+      if (otherProxies.length === 0) {
+        otherGroup.filter = `(?i)^(?!.*(?:${allRegionKeywords})).*`
       }
     }
 
-    generatedRegionGroups.push(
-      otherGroup
-    )
+    generatedRegionGroups.push(otherGroup)
   }
 
-  const regionGroupNames =
-    generatedRegionGroups.map(
-      (g) => g.name
-    )
-
+  const regionGroupNames = generatedRegionGroups.map((g) => g.name)
   const allLocalProxyNames = []
 
-  regionDefinitions.forEach(
-    (r) => {
-      const groupData =
-        regionGroups[r.name]
-
-      if (
-        groupData &&
-        groupData.proxies.length >
-          0
-      ) {
-        allLocalProxyNames.push(
-          ...groupData.proxies
-        )
-      }
+  regionDefinitions.forEach((r) => {
+    const groupData = regionGroups[r.name]
+    if (groupData && groupData.proxies.length > 0) {
+      allLocalProxyNames.push(...groupData.proxies)
     }
-  )
+  })
 
-  allLocalProxyNames.push(
-    ...otherProxies
-  )
+  allLocalProxyNames.push(...otherProxies)
 
   // ==========================================
   // 3.5 构建功能策略组
   // ==========================================
-
   const functionalGroups = []
 
-  // 1. 主节点（采集节点名称中包含“自建”或“free”的节点）
+  // 1. 主节点
   const primaryRegex = /(?:自建|free)/i
   const primaryProxies = allLocalProxyNames.filter((name) =>
     primaryRegex.test(name)
   )
 
-  // 仅在开启了开关且确实匹配到节点时才展示“主节点”，否则自动隐藏
   const hasPrimaryNode = enablePrimaryNode && primaryProxies.length > 0
 
   if (hasPrimaryNode) {
     const primaryGroup = {
       ...groupBaseOption,
-
       name: '主节点',
       type: 'url-test',
       tolerance: 50,
-
       proxies: primaryProxies,
-
-      icon:
-        'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_States.png',
+      icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_States.png',
     }
 
     if (hasProviders) {
@@ -1223,7 +974,7 @@ function main(config) {
     functionalGroups.push(primaryGroup)
   }
 
-  // 2. 备用节点（排除自建、free 及专线）
+  // 2. 备用节点
   const backupProxies = allLocalProxyNames.filter(
     (name) =>
       !primaryRegex.test(name) &&
@@ -1233,136 +984,90 @@ function main(config) {
 
   const backupGroup = {
     ...groupBaseOption,
-
     name: '备用节点',
     type: 'url-test',
     tolerance: 50,
-
-    proxies:
-      backupProxies.length > 0
-        ? backupProxies
-        : ['直连'],
-
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Japan.png',
+    proxies: backupProxies.length > 0 ? backupProxies : ['直连'],
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Japan.png',
   }
 
   if (hasProviders) {
     backupGroup.use = providerKeys
-    backupGroup.filter =
-      '(?i)日本|🇯🇵|jp|japan|新加坡|🇸🇬|sg|singapore'
-    backupGroup['exclude-filter'] =
-      '(?i)自建|free|专线'
+    backupGroup.filter = '(?i)日本|🇯🇵|jp|japan|新加坡|🇸🇬|sg|singapore'
+    backupGroup['exclude-filter'] = '(?i)自建|free|专线'
   }
 
   functionalGroups.push(backupGroup)
 
-  // 3. 默认节点（动态跟随主节点的启用状态）
+  // 3. 默认节点
   const defaultNodeGroup = {
     ...groupBaseOption,
-
     name: '默认节点',
     type: 'fallback',
-
-    proxies: hasPrimaryNode
-      ? ['主节点', '备用节点']
-      : ['备用节点'],
-
-    icon:
-      'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png',
+    proxies: hasPrimaryNode ? ['主节点', '备用节点'] : ['备用节点'],
+    icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Proxy.png',
   }
 
   functionalGroups.push(defaultNodeGroup)
 
   // 4. 服务策略组
-  serviceConfigs.forEach(
-    (svc) => {
-      if (!ruleOptions[svc.key]) {
-        return
-      }
+  serviceConfigs.forEach((svc) => {
+    if (!ruleOptions[svc.key]) return
 
-      rules.push(...svc.rules)
+    rules.push(...svc.rules)
 
-      if (Array.isArray(svc.providers)) {
-        svc.providers.forEach((p) => {
-          ruleProviders[p.key] = {
-            ...ruleProviderCommon,
-            behavior: p.behavior,
-            format: p.format,
-            url: p.url,
-            path: p.path
-          }
-        })
-      }
-
-      let groupProxies
-
-      if (svc.reject) {
-        groupProxies = [
-          'REJECT',
-          '直连',
-          '默认节点',
-          '备用节点'
-        ]
-      } else if (
-        svc.key === 'openai' ||
-        svc.key === 'crypto'
-      ) {
-        groupProxies = hasPrimaryNode
-          ? [
-              '默认节点',
-              '备用节点',
-              '主节点',
-              ...regionGroupNames,
-              '直连'
-            ]
-          : [
-              '默认节点',
-              '备用节点',
-              ...regionGroupNames,
-              '直连'
-            ]
-
-        svc._isStrictRegion = false
-      } else {
-        groupProxies = [
-          '默认节点',
-          '备用节点',
-          ...regionGroupNames,
-          '直连'
-        ]
-      }
-
-      const group = {
-        ...groupBaseOption,
-        name: svc.name,
-        type: 'select',
-        proxies: groupProxies,
-        icon: svc.icon
-      }
-
-      if (svc.url) {
-        group.url = svc.url
-      }
-
-      if (hasProviders) {
-        group.use = providerKeys
-        if (svc._isStrictRegion) {
-          group.filter =
-            '(?i)港|🇭🇰|hk|hongkong|美|🇺🇸|us|usa|日本|🇯🇵|jp|japan|新加坡|🇸🇬|sg|singapore'
+    if (Array.isArray(svc.providers)) {
+      svc.providers.forEach((p) => {
+        ruleProviders[p.key] = {
+          ...ruleProviderCommon,
+          behavior: p.behavior,
+          format: p.format,
+          url: p.url,
+          path: p.path
         }
-      }
-
-      functionalGroups.push(group)
+      })
     }
-  )
+
+    let groupProxies
+
+    if (svc.reject) {
+      groupProxies = ['REJECT', '直连', '默认节点', '备用节点']
+    } else if (svc.key === 'openai' || svc.key === 'crypto') {
+      groupProxies = hasPrimaryNode
+        ? ['默认节点', '备用节点', '主节点', ...regionGroupNames, '直连']
+        : ['默认节点', '备用节点', ...regionGroupNames, '直连']
+      svc._isStrictRegion = false
+    } else {
+      groupProxies = ['默认节点', '备用节点', ...regionGroupNames, '直连']
+    }
+
+    const group = {
+      ...groupBaseOption,
+      name: svc.name,
+      type: 'select',
+      proxies: groupProxies,
+      icon: svc.icon
+    }
+
+    if (svc.url) {
+      group.url = svc.url
+    }
+
+    if (hasProviders) {
+      group.use = providerKeys
+      if (svc._isStrictRegion) {
+        group.filter =
+          '(?i)港|🇭🇰|hk|hongkong|美|🇺🇸|us|usa|日本|🇯🇵|jp|japan|新加坡|🇸🇬|sg|singapore'
+      }
+    }
+
+    functionalGroups.push(group)
+  })
 
   // ==========================================
-  // 3.6 通用兜底策略组
+  // 3.6 通用兜底策略组 (IP 规则沉底)
   // ==========================================
-
   rules.push(
-    'GEOSITE,private,直连',
     'GEOSITE,category-public-tracker,直连',
     'GEOSITE,category-game-platforms-download@cn,直连',
     'GEOIP,private,直连,no-resolve',
@@ -1371,64 +1076,40 @@ function main(config) {
     'MATCH,其他外网'
   )
 
-  const buildFixedGroup =
-    (opts) => {
-      const group = {
-        ...groupBaseOption,
-        ...opts
-      }
-
-      if (hasProviders) {
-        group.use = providerKeys
-      }
-
-      return group
+  const buildFixedGroup = (opts) => {
+    const group = {
+      ...groupBaseOption,
+      ...opts
     }
+
+    if (hasProviders) {
+      group.use = providerKeys
+    }
+
+    return group
+  }
 
   functionalGroups.push(
     buildFixedGroup({
       name: '其他外网',
       type: 'select',
-
-      proxies: [
-        '默认节点',
-        '备用节点',
-        '国内网站',
-        ...allLocalProxyNames
-      ],
-
-      icon:
-        'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Dark/GlobalMedia.png'
+      proxies: ['默认节点', '备用节点', '国内网站', ...allLocalProxyNames],
+      icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Dark/GlobalMedia.png'
     }),
 
     buildFixedGroup({
       name: '国内网站',
       type: 'select',
-
-      proxies: [
-        '直连',
-        '默认节点',
-        '备用节点',
-        ...allLocalProxyNames
-      ],
-
-      url:
-        'https://wifi.vivo.com.cn/generate_204',
-
-      icon:
-        'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/China_Map.png'
+      proxies: ['直连', '默认节点', '备用节点', ...allLocalProxyNames],
+      url: 'https://wifi.vivo.com.cn/generate_204',
+      icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/China_Map.png'
     })
   )
 
   // ==========================================
   // 3.7 组装最终结果
   // ==========================================
-
-  config['proxy-groups'] = [
-    ...functionalGroups,
-    ...generatedRegionGroups
-  ]
-
+  config['proxy-groups'] = [...functionalGroups, ...generatedRegionGroups]
   config['rules'] = rules
   config['rule-providers'] = ruleProviders
 
