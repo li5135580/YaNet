@@ -1,10 +1,12 @@
 /***
  * Clash Verge Rev / Mihomo Party / OpenClash 优化脚本
  * 优化点：
- * 1. 彻底移除境外不可达 Fallback，杜绝 5 秒 context deadline 超时
+ * 1. 彻底移除 DNS 层 fallback 与 fallback-filter，杜绝 5 秒 context deadline 超时
+ *    （注意：策略组"默认节点"的 fallback 类型是另一概念，与此无关）
  * 2. 修复 telegram_ip_mrs 导致的 DNS 泄漏 (追加 no-resolve)
  * 3. 优化 Fake-IP 性能，关闭 prefer-h3 与 respect-rules 冲突
- * 4. 内置 AdGuard Home (127.0.0.1:5335) 开关与联动支持
+ * 4. 内置 AdGuard Home 开关与联动支持（地址填路由器 AGH 的 LAN 口）
+ * 5. 四端通用（OpenClash/PC/移动端同配）：AGH 优选+加密 DoH 备路，境外域名真实解析经代理走 Cloudflare DoH（消除明文/并发泄露，低内存设备免 OOM）
  */
 
 function stringToArray(val) {
@@ -69,10 +71,12 @@ const args =
         defaultDNS: _chinaIpDns,
         directDNS: _chinaIpDns,
         chinaDNS: _chinaDohDns,
-        mode: 'default',
+        allowLan: false, // 默认仅监听本机（PC/移动端安全默认）；家庭共享场景由路由器
+        // 网关层承担，无需开放；确需开放时用客户端 GUI"允许局域网"开关（覆盖本值）
         ipv6: false, // 禁用 IPv6，彻底规避双栈回退卡顿
         logLevel: 'error',
         githubProxy: 'https://ghfast.top/',
+        // ⚠️ 分享脚本或产物 YAML 前，务必先脱敏 subscriptions 里的订阅地址（含 Token）
         subscriptions: _proxyProviders,
 
         // 核心性能与耗电配置
@@ -82,9 +86,10 @@ const args =
         // 主节点总开关
         enablePrimaryNode: true,
 
-        // ⭐ AdGuard Home 联动开关 (若路由器运行 AGH 监听 5335，设为 true)
+        // ⭐ AdGuard Home 联动开关：填路由器 AGH 的 LAN 地址，四端（OpenClash/PC/
+        // 安卓/iOS）同一份配置通用；AGH 不可达时自动回落国内加密 DoH，解析不瘫
         enableAdguardHome: true,
-        adguardHomeDNS: '127.0.0.1:5335',
+        adguardHomeDNS: '192.168.10.1:5335',
       }
 
 let enable = args.enable ?? true
@@ -96,7 +101,7 @@ let skipIps = args.skipIps ?? _skipIps
 let defaultDNS = args.defaultDNS ?? _chinaIpDns
 let directDNS = args.directDNS ?? _chinaIpDns
 let chinaDNS = args.chinaDNS ?? _chinaDohDns
-let mode = args.mode ?? ''
+let allowLan = args.allowLan ?? false
 let ipv6 = args.ipv6 ?? false
 let logLevel = args.logLevel ?? 'error'
 let githubProxy = args.githubProxy ?? 'https://ghfast.top/'
@@ -105,17 +110,20 @@ let checkInterval = args.checkInterval ?? 300
 let lazy = args.lazy ?? false
 let enablePrimaryNode = args.enablePrimaryNode ?? true
 let enableAdguardHome = args.enableAdguardHome ?? true
-let adguardHomeDNS = args.adguardHomeDNS ?? '127.0.0.1:5335'
+let adguardHomeDNS = args.adguardHomeDNS ?? '192.168.10.1:5335'
 
 skipIps = stringToArray(skipIps)
 defaultDNS = stringToArray(defaultDNS)
 directDNS = stringToArray(directDNS)
 chinaDNS = stringToArray(chinaDNS)
 
-// 若开启 AdGuard Home，优先置顶 127.0.0.1:5335
+// 若开启 AdGuard Home：AGH 优选 + 加密 DoH 备路（并发竞速下局域网 AGH 通常最快，
+// DNS 级广告过滤大概率保留；AGH 不可达时加密 DoH 接管，国内解析不瘫痪）。
+// directDNS 的备路同时替换掉明文 _chinaIpDns，全链路无明文。
 if (enableAdguardHome) {
-  chinaDNS = [adguardHomeDNS, ...chinaDNS.filter((d) => d !== adguardHomeDNS)]
-  directDNS = [adguardHomeDNS, ...directDNS.filter((d) => d !== adguardHomeDNS)]
+  const backupDNS = chinaDNS
+  chinaDNS = [adguardHomeDNS, ...backupDNS]
+  directDNS = [adguardHomeDNS, ...backupDNS]
 }
 
 let ruleOptions = {
@@ -290,18 +298,25 @@ const dnsConfig = {
     'geosite:category-bank-jp',
   ],
 
-  nameserver: chinaDNS,
+  // 默认 nameserver 反转设计：境外域名真实解析（HTTPS-RR/TXT/SRV、fake-ip-filter
+  // 白名单域名）经"默认节点"走 Cloudflare DoH，加密且不被污染。
+  // 注意：不要改用 geosite:geolocation-!cn 的 policy 实现——该分类约 10 万域名，
+  // 低内存路由器（<1GB，如 900MB ARM 设备）加载时必 OOM（已实测）
+  nameserver: ['https://1.1.1.1/dns-query#默认节点'],
   'default-nameserver': defaultDNS,
   'direct-nameserver': directDNS,
-  'proxy-server-nameserver': defaultDNS,
+  // 节点域名解析跟随 chinaDNS（AGH 优选+加密备路；关闭 AGH 时为纯 DoH，不再明文）
+  'proxy-server-nameserver': chinaDNS,
 
   // 彻底移除 fallback 与 fallback-filter，杜绝 5 秒 context deadline 超时！
 
   'nameserver-policy': {
     'geosite:private': 'system',
+    // DNS 服务商域名明文直解（bootstrap）：打断 AGH→mihomo→AGH 循环依赖，
+    // 仅服务商自身域名，不含任何用户查询
+    'dns.alidns.com,doh.pub,dot.pub': defaultDNS,
     'geosite:tld-cn,cn,steam@cn,category-games@cn,microsoft@cn,apple@cn,category-game-platforms-download@cn,category-public-tracker':
       chinaDNS,
-    // 移除将 gfw 域名导向国外 DoH 的 policy，交由内核 Fake-IP 处理
   },
 }
 
@@ -697,8 +712,8 @@ function main(config) {
     throw new Error('配置文件中未找到任何代理')
   }
 
-  config['allow-lan'] = true
-  config['bind-address'] = '*'
+  config['allow-lan'] = allowLan
+  config['bind-address'] = allowLan ? '*' : '127.0.0.1'
   config['mode'] = 'rule'
   config['ipv6'] = ipv6
 
@@ -824,12 +839,6 @@ function main(config) {
   config.proxies.push({
     name: '直连',
     type: 'direct',
-    udp: true
-  })
-
-  config.proxies.push({
-    name: '拒绝',
-    type: 'reject',
     udp: true
   })
 
