@@ -1,9 +1,8 @@
 /***
- * Clash Verge Rev / Mihomo Party / OpenClash 优化脚本 (小内存路由器专属优化版)
- * 1. 彻底移除 DNS fallback 与 fallback-filter，杜绝超时
- * 2. 优化 Fake-IP，关闭 prefer-h3 与 respect-rules 冲突
- * 3. 内存优化：启用 memconservative 加载模式，DNS 缓存收窄为 4096，策略组开启 lazy 懒加载
- * 4. 精简服务规则，剔除 Line、禁用大体积流媒体规则集，广告仅保留高效二进制 mrs 规则
+ * Clash Verge Rev / Mihomo Party / OpenClash 优化脚本
+ * 1. 内存优化：启用 memconservative 加载模式，DNS 缓存设为 4096，策略组开启 lazy 懒加载
+ * 2. 规则优化：剔除 Line 分组，默认禁用迪士尼/奈飞/tiktok/spotify，广告过滤仅保留轻量 mrs 规则
+ * 3. 完整保留 QUIC/TLS/HTTP Sniffer 嗅探配置
  */
 
 function stringToArray(val) {
@@ -101,7 +100,7 @@ let logLevel = args.logLevel ?? 'error'
 let githubProxy = args.githubProxy ?? 'https://ghfast.top/'
 let subscriptions = args.subscriptions ?? _proxyProviders
 let checkInterval = args.checkInterval ?? 900
-// 2. 优化：强制确保 lazy 默认为 true
+// 2. 优化策略组：开启懒加载
 let lazy = args.lazy ?? true
 let enablePrimaryNode = args.enablePrimaryNode ?? true
 let enableAdguardHome = args.enableAdguardHome ?? true
@@ -118,7 +117,7 @@ if (enableAdguardHome) {
   directDNS = [adguardHomeDNS, ...backupDNS]
 }
 
-// 6. 精简规则集：默认禁用迪士尼、奈飞、tiktok、spotify、apple
+// 6. 精简规则集：默认不启用迪士尼、奈飞、tiktok、spotify
 let ruleOptions = {
   ads: true,
   apple: false,
@@ -248,7 +247,7 @@ const dnsConfig = {
   ipv6: false,
 
   'independent-cache': true,
-  // 3. 优化：DNS 缓存改为 4096
+  // 3. DNS 缓存改为 4096
   'cache-size': 4096,
   'fallback-cache': false,
 
@@ -346,7 +345,7 @@ function isAdInfoNode(name) {
 }
 
 // --- 2. 服务规则数据结构 ---
-// 4. 优化：去除了 Line，且广告过滤仅保留 lightweight 的 mrs 二进制格式
+// 4. 广告过滤保留精简 mrs 规则集，5. 去除 Line 分组
 const serviceConfigs = [
   {
     key: 'ads',
@@ -686,11 +685,12 @@ function main(config) {
   config['keep-alive-interval'] = 1800
   config['find-process-mode'] = 'strict'
   config['geodata-mode'] = true
-  // 1. 优化：关闭内存常驻模式，使用小内存模式
+  // 1. 关闭内存常驻的 GeoData 加载器
   config['geodata-loader'] = 'memconservative'
   config['geo-auto-update'] = true
   config['geo-update-interval'] = 24
 
+  // ⭐ 完整保留原嗅探配置，包含 QUIC
   config['sniffer'] = {
     enable: true,
     'force-dns-mapping': true,
@@ -699,7 +699,8 @@ function main(config) {
 
     sniff: {
       TLS: { ports: [443, 8443] },
-      HTTP: { ports: [80, '8080-8880'] }
+      HTTP: { ports: [80, '8080-8880'] },
+      QUIC: { ports: [443, 8443] }
     },
 
     'skip-src-address': skipIps,
@@ -770,7 +771,7 @@ function main(config) {
             enable: true,
             url: 'https://www.gstatic.com/generate_204',
             interval: checkInterval,
-            lazy: lazy // 保证 provider health-check 同样开启懒加载
+            lazy: lazy
           },
         }
 
