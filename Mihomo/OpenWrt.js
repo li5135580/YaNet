@@ -1,8 +1,14 @@
 /***
  * Clash Verge Rev / Mihomo Party / OpenClash 优化脚本
- * 1. 内存优化：启用 memconservative 加载模式，DNS 缓存设为 4096，策略组开启 lazy 懒加载
- * 2. 规则优化：剔除 Line 分组，默认禁用迪士尼/奈飞/tiktok/spotify，广告过滤仅保留轻量 mrs 规则
- * 3. 完整保留 QUIC/TLS/HTTP Sniffer 嗅探配置
+ * 优化点：
+ * 1. 彻底移除 DNS 层 fallback 与 fallback-filter，杜绝 5 秒 context deadline 超时
+ *    （注意：策略组"默认节点"的 fallback 类型是另一概念，与此无关）
+ * 2. 修复 telegram_ip_mrs 导致的 DNS 泄漏 (追加 no-resolve)
+ * 3. 优化 Fake-IP 性能，关闭 prefer-h3 与 respect-rules 冲突
+ * 4. 内置 AdGuard Home 开关与联动支持（地址填路由器 AGH 的 LAN 口）
+ * 5. 四端通用（OpenClash/PC/移动端同配）：AGH 优选+加密 DoH 备路，境外域名真实解析经代理走 Cloudflare DoH（消除明文/并发泄露，低内存设备免 OOM）
+ * 6. geodata-loader 改为 memconservative，DNS 缓存 4096，策略组懒加载并降低后台保活
+ * 7. 广告过滤仅保留精简 mrs 规则集；去除 Line 分组；默认关闭 Disney/Netflix/TikTok/Spotify
  */
 
 function stringToArray(val) {
@@ -59,7 +65,7 @@ const args =
     ? $arguments
     : {
         enable: true,
-        ruleSet: 'custom',
+        ruleSet: 'all',
         regionSet: 'all',
         excludeHighPercentage: true,
         globalRatioLimit: 2,
@@ -67,26 +73,29 @@ const args =
         defaultDNS: _chinaIpDns,
         directDNS: _chinaIpDns,
         chinaDNS: _chinaDohDns,
-        allowLan: false,
-        ipv6: false,
+        allowLan: false, // 默认仅监听本机（PC/移动端安全默认）；家庭共享场景由路由器
+        // 网关层承担，无需开放；确需开放时用客户端 GUI"允许局域网"开关（覆盖本值）
+        ipv6: false, // 禁用 IPv6，彻底规避双栈回退卡顿
         logLevel: 'error',
         githubProxy: 'https://ghfast.top/',
+        // ⚠️ 分享脚本或产物 YAML 前，务必先脱敏 subscriptions 里的订阅地址（含 Token）
         subscriptions: _proxyProviders,
 
-        // 核心性能与耗电配置
-        checkInterval: 900,
-        lazy: true, // 开启懒加载
+        // 核心性能与耗电配置（懒加载 + 降低后台并发保活）
+        checkInterval: 1800,
+        lazy: true,
 
         // 主节点总开关
         enablePrimaryNode: true,
 
-        // AdGuard Home 联动开关
+        // ⭐ AdGuard Home 联动开关：填路由器 AGH 的 LAN 地址，四端（OpenClash/PC/
+        // 安卓/iOS）同一份配置通用；AGH 不可达时自动回落国内加密 DoH，解析不瘫
         enableAdguardHome: true,
         adguardHomeDNS: '192.168.10.1:5335',
       }
 
 let enable = args.enable ?? true
-let ruleSet = args.ruleSet ?? 'custom'
+let ruleSet = args.ruleSet ?? 'all'
 let regionSet = args.regionSet ?? 'all'
 let excludeHighPercentage = args.excludeHighPercentage ?? true
 let globalRatioLimit = args.globalRatioLimit ?? 2
@@ -99,8 +108,7 @@ let ipv6 = args.ipv6 ?? false
 let logLevel = args.logLevel ?? 'error'
 let githubProxy = args.githubProxy ?? 'https://ghfast.top/'
 let subscriptions = args.subscriptions ?? _proxyProviders
-let checkInterval = args.checkInterval ?? 900
-// 2. 优化策略组：开启懒加载
+let checkInterval = args.checkInterval ?? 1800
 let lazy = args.lazy ?? true
 let enablePrimaryNode = args.enablePrimaryNode ?? true
 let enableAdguardHome = args.enableAdguardHome ?? true
@@ -111,13 +119,16 @@ defaultDNS = stringToArray(defaultDNS)
 directDNS = stringToArray(directDNS)
 chinaDNS = stringToArray(chinaDNS)
 
+// 若开启 AdGuard Home：AGH 优选 + 加密 DoH 备路（并发竞速下局域网 AGH 通常最快，
+// DNS 级广告过滤大概率保留；AGH 不可达时加密 DoH 接管，国内解析不瘫痪）。
+// directDNS 的备路同时替换掉明文 _chinaIpDns，全链路无明文。
 if (enableAdguardHome) {
   const backupDNS = chinaDNS
   chinaDNS = [adguardHomeDNS, ...backupDNS]
   directDNS = [adguardHomeDNS, ...backupDNS]
 }
 
-// 6. 精简规则集：默认不启用迪士尼、奈飞、tiktok、spotify
+// 精简规则集：默认不启用 Disney / Netflix / TikTok / Spotify；已去除 Line
 let ruleOptions = {
   ads: true,
   apple: false,
@@ -126,16 +137,22 @@ let ruleOptions = {
   google: true,
   openai: true,
   crypto: true,
-  spotify: false, // 禁用
+  spotify: false,
   youtube: true,
-  netflix: false, // 禁用
-  tiktok: false,  // 禁用
-  disney: false,  // 禁用
+  netflix: false,
+  tiktok: false,
+  disney: false,
   telegram: true,
   games: true,
 }
 
-if (typeof ruleSet === 'string' && ruleSet !== 'all' && ruleSet !== 'custom') {
+// 'all' 仍开启常用规则，但不强制开启流媒体（disney/netflix/tiktok/spotify）
+const mediaOffByDefault = new Set(['disney', 'netflix', 'tiktok', 'spotify'])
+if (ruleSet === 'all') {
+  Object.keys(ruleOptions).forEach((key) => {
+    if (!mediaOffByDefault.has(key)) ruleOptions[key] = true
+  })
+} else if (typeof ruleSet === 'string') {
   ruleSet
     .split(';')
     .map((s) => s.trim())
@@ -244,18 +261,17 @@ if (regionSet === 'all') {
 const dnsConfig = {
   enable: true,
   listen: '0.0.0.0:53',
-  ipv6: false,
+  ipv6: false, // 强制关闭 IPv6 DNS 解析
 
   'independent-cache': true,
-  // 3. DNS 缓存改为 4096
   'cache-size': 4096,
   'fallback-cache': false,
 
   'log-level': logLevel,
-  'prefer-h3': false,
+  'prefer-h3': false, // 关闭 H3，防止海外 QUIC DNS 超时
   'use-hosts': true,
   'use-system-hosts': true,
-  'respect-rules': false,
+  'respect-rules': false, // Fake-IP 模式下设为 false 避免解析混乱
 
   'enhanced-mode': 'fake-ip',
   'fake-ip-range': '198.18.0.0/16',
@@ -288,13 +304,22 @@ const dnsConfig = {
     'geosite:category-bank-jp',
   ],
 
+  // 默认 nameserver 反转设计：境外域名真实解析（HTTPS-RR/TXT/SRV、fake-ip-filter
+  // 白名单域名）经"默认节点"走 Cloudflare DoH，加密且不被污染。
+  // 注意：不要改用 geosite:geolocation-!cn 的 policy 实现——该分类约 10 万域名，
+  // 低内存路由器（<1GB，如 900MB ARM 设备）加载时必 OOM（已实测）
   nameserver: ['https://1.1.1.1/dns-query#默认节点'],
   'default-nameserver': defaultDNS,
   'direct-nameserver': directDNS,
+  // 节点域名解析跟随 chinaDNS（AGH 优选+加密备路；关闭 AGH 时为纯 DoH，不再明文）
   'proxy-server-nameserver': chinaDNS,
+
+  // 彻底移除 fallback 与 fallback-filter，杜绝 5 秒 context deadline 超时！
 
   'nameserver-policy': {
     'geosite:private': 'system',
+    // DNS 服务商域名明文直解（bootstrap）：打断 AGH→mihomo→AGH 循环依赖，
+    // 仅服务商自身域名，不含任何用户查询
     'dns.alidns.com,doh.pub,dot.pub': defaultDNS,
     'geosite:tld-cn,cn,steam@cn,category-games@cn,microsoft@cn,apple@cn,category-game-platforms-download@cn,category-public-tracker':
       chinaDNS,
@@ -345,20 +370,14 @@ function isAdInfoNode(name) {
 }
 
 // --- 2. 服务规则数据结构 ---
-// 4. 广告过滤保留精简 mrs 规则集，5. 去除 Line 分组
 const serviceConfigs = [
   {
     key: 'ads',
     name: '广告过滤',
     icon: 'https://raw.githubusercontent.com/Lanlan13-14/Icon-for-webui/main/block.png',
+    // 仅保留精简 mrs 规则集，降低内存与加载开销
     rules: [
       'RULE-SET,category-ads-all_mrs,广告过滤',
-      'DOMAIN-SUFFIX,ad.ldmnq.com,广告过滤',
-      'DOMAIN-SUFFIX,ads.ldmnq.com,广告过滤',
-      'DOMAIN-SUFFIX,push.ldmnq.com,广告过滤',
-      'DOMAIN-SUFFIX,stat.ldmnq.cn,广告过滤',
-      'DOMAIN-SUFFIX,log.ldmnq.cn,广告过滤',
-      'DOMAIN-SUFFIX,mnqlog.ldmnq.com,广告过滤',
     ],
     providers: [
       {
@@ -422,11 +441,19 @@ const serviceConfigs = [
     icon: 'https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/AI.png',
     url: 'https://chat.openai.com/cdn-cgi/trace',
     rules: [
+      'RULE-SET,ai_rules,国外AI',
       'RULE-SET,jetbrains-ai_mrs,国外AI',
       'RULE-SET,category-ai-not-cn_mrs,国外AI',
       'RULE-SET,category-ai-chat-not-cn_mrs,国外AI'
     ],
     providers: [
+      {
+        key: 'ai_rules',
+        url: `${githubProxy}https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/OpenAI/OpenAI.yaml`,
+        path: './ruleset/blackmatrix7/openai.yaml',
+        format: 'yaml',
+        behavior: 'classical'
+      },
       {
         key: 'jetbrains-ai_mrs',
         url: `${githubProxy}https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/jetbrains-ai.mrs`,
@@ -594,6 +621,7 @@ const serviceConfigs = [
     url: 'https://www.telegram.org/img/website_icon.svg',
     rules: [
       'RULE-SET,telegram_domain_mrs,Telegram',
+      // ⭐ 核心修复：必须添加 no-resolve，杜绝 DNS 泄漏！
       'RULE-SET,telegram_ip_mrs,Telegram,no-resolve'
     ],
     providers: [
@@ -682,15 +710,14 @@ function main(config) {
 
   config['unified-delay'] = true
   config['tcp-concurrent'] = true
-  config['keep-alive-interval'] = 1800
+  // 降低后台 TCP 保活频率，配合策略组懒加载减少并发与耗电
+  config['keep-alive-interval'] = 3600
   config['find-process-mode'] = 'strict'
   config['geodata-mode'] = true
-  // 1. 关闭内存常驻的 GeoData 加载器
   config['geodata-loader'] = 'memconservative'
   config['geo-auto-update'] = true
   config['geo-update-interval'] = 24
 
-  // ⭐ 完整保留原嗅探配置，包含 QUIC
   config['sniffer'] = {
     enable: true,
     'force-dns-mapping': true,
@@ -710,6 +737,7 @@ function main(config) {
       'geosite:google',
       'geosite:youtube',
       'geosite:category-ai-!cn',
+      'geosite:netflix',
       'geosite:facebook',
       'geosite:twitter'
     ],
@@ -770,8 +798,7 @@ function main(config) {
           'health-check': {
             enable: true,
             url: 'https://www.gstatic.com/generate_204',
-            interval: checkInterval,
-            lazy: lazy
+            interval: checkInterval
           },
         }
 
