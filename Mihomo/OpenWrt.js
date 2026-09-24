@@ -7,8 +7,6 @@
  * 3. 优化 Fake-IP 性能，关闭 prefer-h3 与 respect-rules 冲突
  * 4. 内置 AdGuard Home 开关与联动支持（地址填路由器 AGH 的 LAN 口）
  * 5. 四端通用（OpenClash/PC/移动端同配）：AGH 优选+加密 DoH 备路，境外域名真实解析经代理走 Cloudflare DoH（消除明文/并发泄露，低内存设备免 OOM）
- * 6. geodata-loader 改为 memconservative，DNS 缓存 4096，策略组懒加载并降低后台保活
- * 7. 广告过滤仅保留精简 mrs 规则集；去除 Line 分组；默认关闭 Disney/Netflix/TikTok/Spotify
  */
 
 function stringToArray(val) {
@@ -65,7 +63,7 @@ const args =
     ? $arguments
     : {
         enable: true,
-        ruleSet: 'all',
+        ruleSet: 'ads;github;microsoft;openai;crypto;apple;google;youtube;telegram',
         regionSet: 'all',
         excludeHighPercentage: true,
         globalRatioLimit: 2,
@@ -81,8 +79,8 @@ const args =
         // ⚠️ 分享脚本或产物 YAML 前，务必先脱敏 subscriptions 里的订阅地址（含 Token）
         subscriptions: _proxyProviders,
 
-        // 核心性能与耗电配置（懒加载 + 降低后台并发保活）
-        checkInterval: 1800,
+        // 核心性能与耗电配置
+        checkInterval: 900,
         lazy: true,
 
         // 主节点总开关
@@ -108,8 +106,8 @@ let ipv6 = args.ipv6 ?? false
 let logLevel = args.logLevel ?? 'error'
 let githubProxy = args.githubProxy ?? 'https://ghfast.top/'
 let subscriptions = args.subscriptions ?? _proxyProviders
-let checkInterval = args.checkInterval ?? 1800
-let lazy = args.lazy ?? true
+let checkInterval = args.checkInterval ?? 300
+let lazy = args.lazy ?? false
 let enablePrimaryNode = args.enablePrimaryNode ?? true
 let enableAdguardHome = args.enableAdguardHome ?? true
 let adguardHomeDNS = args.adguardHomeDNS ?? '192.168.10.1:5335'
@@ -128,30 +126,25 @@ if (enableAdguardHome) {
   directDNS = [adguardHomeDNS, ...backupDNS]
 }
 
-// 精简规则集：默认不启用 Disney / Netflix / TikTok / Spotify；已去除 Line
 let ruleOptions = {
   ads: true,
-  apple: false,
+  apple: true,
   microsoft: true,
   github: true,
   google: true,
   openai: true,
   crypto: true,
-  spotify: false,
   youtube: true,
+  telegram: true,
+  games: false,
+  disney: false,
   netflix: false,
   tiktok: false,
-  disney: false,
-  telegram: true,
-  games: true,
+  spotify: false,
 }
 
-// 'all' 仍开启常用规则，但不强制开启流媒体（disney/netflix/tiktok/spotify）
-const mediaOffByDefault = new Set(['disney', 'netflix', 'tiktok', 'spotify'])
 if (ruleSet === 'all') {
-  Object.keys(ruleOptions).forEach((key) => {
-    if (!mediaOffByDefault.has(key)) ruleOptions[key] = true
-  })
+  Object.keys(ruleOptions).forEach((key) => (ruleOptions[key] = true))
 } else if (typeof ruleSet === 'string') {
   ruleSet
     .split(';')
@@ -264,7 +257,7 @@ const dnsConfig = {
   ipv6: false, // 强制关闭 IPv6 DNS 解析
 
   'independent-cache': true,
-  'cache-size': 4096,
+  'cache-size': 2048,
   'fallback-cache': false,
 
   'log-level': logLevel,
@@ -375,7 +368,6 @@ const serviceConfigs = [
     key: 'ads',
     name: '广告过滤',
     icon: 'https://raw.githubusercontent.com/Lanlan13-14/Icon-for-webui/main/block.png',
-    // 仅保留精简 mrs 规则集，降低内存与加载开销
     rules: [
       'RULE-SET,category-ads-all_mrs,广告过滤',
     ],
@@ -641,7 +633,6 @@ const serviceConfigs = [
       }
     ]
   },
-
   {
     key: 'games',
     name: '游戏专用',
@@ -710,11 +701,10 @@ function main(config) {
 
   config['unified-delay'] = true
   config['tcp-concurrent'] = true
-  // 降低后台 TCP 保活频率，配合策略组懒加载减少并发与耗电
-  config['keep-alive-interval'] = 3600
+  config['keep-alive-interval'] = 1800
   config['find-process-mode'] = 'strict'
   config['geodata-mode'] = true
-  config['geodata-loader'] = 'memconservative'
+  config['geodata-loader'] = 'standard'
   config['geo-auto-update'] = true
   config['geo-update-interval'] = 24
 
@@ -737,7 +727,6 @@ function main(config) {
       'geosite:google',
       'geosite:youtube',
       'geosite:category-ai-!cn',
-      'geosite:netflix',
       'geosite:facebook',
       'geosite:twitter'
     ],
