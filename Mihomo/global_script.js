@@ -1127,10 +1127,27 @@ function main(config) {
 
 // ==========================================
 // 4. Sub-Store 运行器兼容层
-// 运行器默认先找 function operator(proxies)；本脚本是全量 config 改写，
-// 实际由 main 完成。补一个别名可避免每次执行都先抛
-// "ReferenceError: operator is not defined" 并写一条 ERROR 日志。
+// 运行器主路径会调用 function operator(input)，入参是文件包装对象
+// {$content,$files,$options,$file}，而非纯配置。这里按运行器自身
+// nodeFunc 的逻辑解包 -> 交给 main -> 回写 $content。
+// 缺了它每次都会先抛 "ReferenceError: operator is not defined" 再走兜底。
 // ==========================================
-function operator(config) {
-  return main(config)
+function operator(input) {
+  if (input && (input.$files || input.$content)) {
+    const { $files, $options, $file } = input
+    let $content = input.$content
+    if (['mihomoConfig', 'mihomoProfile'].includes($file && $file.type)) {
+      let config
+      if ($content) {
+        try {
+          config = ProxyUtils.yaml.safeLoad($content)
+        } catch (e) {
+          console.log(e.message ?? e)
+        }
+      }
+      $content = ProxyUtils.yaml.safeDump(main(config || {}))
+    }
+    return { $content, $files, $options, $file }
+  }
+  return main(input)
 }
