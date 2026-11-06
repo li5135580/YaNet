@@ -1133,7 +1133,9 @@ function main(config) {
 // 缺了它每次都会先抛 "ReferenceError: operator is not defined" 再走兜底。
 // ==========================================
 function operator(input) {
-  console.log('[op-debug] isArray=' + Array.isArray(input) + ' keys=' + (input && typeof input === 'object' ? Object.keys(input).join('/') : typeof input) + ' fileType=' + (input && input.$file && input.$file.type) + ' contentLen=' + (input && input.$content ? input.$content.length : 0))
+  // 代理列表形态无法据此生成整份配置，交给兜底路径；
+  // 用这条固定文案抛错可命中运行器白名单，不会写 ERROR 日志
+  if (Array.isArray(input)) throw new Error('$content is not defined')
   if (input && (input.$files || input.$content)) {
     const { $files, $options, $file } = input
     let $content = input.$content
