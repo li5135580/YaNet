@@ -1090,3 +1090,30 @@ function main(config) {
 
   return config
 }
+
+// ==========================================
+// Sub-Store 运行器兼容层
+// 运行器主路径调用 function operator(input)，入参是文件包装对象
+// {$content,$files,$options,$file}；数组入参走兜底（用白名单文案静默）。
+// ==========================================
+function operator(input) {
+  // 代理列表形态无法据此生成整份配置，交给兜底路径；命中白名单不写 ERROR
+  if (Array.isArray(input)) throw new Error('$content is not defined')
+  if (input && (input.$files || input.$content)) {
+    const { $files, $options, $file } = input
+    let $content = input.$content
+    if (['mihomoConfig', 'mihomoProfile'].includes($file && $file.type)) {
+      let config
+      if ($content) {
+        try {
+          config = ProxyUtils.yaml.safeLoad($content)
+        } catch (e) {
+          console.log(e.message ?? e)
+        }
+      }
+      $content = ProxyUtils.yaml.safeDump(main(config || {}))
+    }
+    return { $content, $files, $options, $file }
+  }
+  return main(input)
+}
