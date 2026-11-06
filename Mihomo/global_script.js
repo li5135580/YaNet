@@ -1124,3 +1124,13 @@ function main(config) {
 
   return config
 }
+
+// ==========================================
+// 4. Sub-Store 运行器兼容层
+// 运行器默认先找 function operator(proxies)；本脚本是全量 config 改写，
+// 实际由 main 完成。补一个别名可避免每次执行都先抛
+// "ReferenceError: operator is not defined" 并写一条 ERROR 日志。
+// ==========================================
+function operator(config) {
+  return main(config)
+}
