@@ -1133,6 +1133,7 @@ function main(config) {
 // 缺了它每次都会先抛 "ReferenceError: operator is not defined" 再走兜底。
 // ==========================================
 function operator(input) {
+  console.log('[op-debug] isArray=' + Array.isArray(input) + ' keys=' + (input && typeof input === 'object' ? Object.keys(input).join('/') : typeof input) + ' fileType=' + (input && input.$file && input.$file.type) + ' contentLen=' + (input && input.$content ? input.$content.length : 0))
   if (input && (input.$files || input.$content)) {
     const { $files, $options, $file } = input
     let $content = input.$content
